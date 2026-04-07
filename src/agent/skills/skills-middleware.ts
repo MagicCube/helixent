@@ -40,7 +40,7 @@ export function createSkillsMiddleware(
       };
     },
 
-    beforeModel: async (modelContext, agentContext) => {
+    beforeModel: async ({ modelContext, agentContext }) => {
       if (agentContext.skills && agentContext.skills.length > 0) {
         return {
           prompt:

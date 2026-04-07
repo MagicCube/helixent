@@ -16,80 +16,114 @@ import type { AgentContext } from "./agent";
  *
  * All hooks are optional.
  */
+export type BeforeModelParams = {
+  /** The model context for this run (shared, mutable). */
+  modelContext: ModelContext;
+  /** The agent context for this run (shared, mutable). */
+  agentContext: AgentContext;
+};
+
+export type AfterModelParams = {
+  /** The agent context for this run (shared, mutable). */
+  agentContext: AgentContext;
+  /** The assistant message for this run (shared, mutable). */
+  message: AssistantMessage;
+};
+
+export type BeforeAgentRunParams = {
+  /** The agent context for this run (shared, mutable). */
+  agentContext: AgentContext;
+};
+
+export type AfterAgentRunParams = {
+  /** The agent context for this run (shared, mutable). */
+  agentContext: AgentContext;
+};
+
+export type BeforeAgentStepParams = {
+  /** The agent context for this run (shared, mutable). */
+  agentContext: AgentContext;
+  /** The current step number (1-based). */
+  step: number;
+};
+
+export type AfterAgentStepParams = {
+  /** The agent context for this run (shared, mutable). */
+  agentContext: AgentContext;
+  /** The current step number (1-based). */
+  step: number;
+};
+
+export type BeforeToolUseParams = {
+  /** The agent context for this run (shared, mutable). */
+  agentContext: AgentContext;
+  /** The tool call descriptor emitted by the model. */
+  toolUse: ToolUseContent;
+};
+
+export type AfterToolUseParams = {
+  /** The agent context for this run (shared, mutable). */
+  agentContext: AgentContext;
+  /** The tool call descriptor emitted by the model. */
+  toolUse: ToolUseContent;
+  /** The raw result returned by the tool implementation. */
+  toolResult: unknown;
+};
+
 export interface AgentMiddleware {
   /**
    * Runs immediately before the model is invoked.
-   * @param modelContext - The model context for this run (shared, mutable).
-   * @param agentContext - The agent context for this run (shared, mutable).
+   * @param params - Hook parameters.
    * @returns Optional model context updates to merge into `modelContext`.
    */
-  beforeModel?: (
-    modelContext: ModelContext,
-    agentContext: AgentContext,
-  ) => Promise<Partial<ModelContext> | null | undefined | void>;
+  beforeModel?: (params: BeforeModelParams) => Promise<Partial<ModelContext> | null | undefined | void>;
 
   /**
    * Runs immediately after the model is invoked.
-   * @param context - The agent context for this run (shared, mutable).
-   * @param message - The assistant message for this run (shared, mutable).
+   * @param params - Hook parameters.
    * @returns Optional message updates to merge into `message`.
    */
-  afterModel?: (
-    context: AgentContext,
-    message: AssistantMessage,
-  ) => Promise<Partial<AssistantMessage> | null | undefined | void>;
+  afterModel?: (params: AfterModelParams) => Promise<Partial<AssistantMessage> | null | undefined | void>;
 
   /**
    * Runs once after the user message is appended, before the first step begins.
-   * @param context - The agent context for this run (shared, mutable).
+   * @param params - Hook parameters.
    * @returns Optional context updates to merge into `context`.
    */
-  beforeAgentRun?: (context: AgentContext) => Promise<Partial<AgentContext> | null | undefined | void>;
+  beforeAgentRun?: (params: BeforeAgentRunParams) => Promise<Partial<AgentContext> | null | undefined | void>;
   /**
    * Runs once when the agent is about to stop because it produced no tool calls.
    *
    * Note: this hook is **not** called if the agent throws (e.g. max steps reached).
-   * @param context - The agent context for this run (shared, mutable).
+   * @param params - Hook parameters.
    * @returns Optional context updates to merge into `context`.
    */
-  afterAgentRun?: (context: AgentContext) => Promise<Partial<AgentContext> | null | undefined | void>;
+  afterAgentRun?: (params: AfterAgentRunParams) => Promise<Partial<AgentContext> | null | undefined | void>;
 
   /**
    * Runs at the start of each step, before the model is invoked.
-   * @param context - The agent context for this run (shared, mutable).
-   * @param step - The current step number (1-based).
+   * @param params - Hook parameters.
    * @returns Optional context updates to merge into `context`.
    */
-  beforeAgentStep?: (context: AgentContext, step: number) => Promise<Partial<AgentContext> | null | undefined | void>;
+  beforeAgentStep?: (params: BeforeAgentStepParams) => Promise<Partial<AgentContext> | null | undefined | void>;
   /**
    * Runs at the end of each step, after all tool uses for the step have completed
    * (if any).
-   * @param context - The agent context for this run (shared, mutable).
-   * @param step - The current step number (1-based).
+   * @param params - Hook parameters.
    * @returns Optional context updates to merge into `context`.
    */
-  afterAgentStep?: (context: AgentContext, step: number) => Promise<Partial<AgentContext> | null | undefined | void>;
+  afterAgentStep?: (params: AfterAgentStepParams) => Promise<Partial<AgentContext> | null | undefined | void>;
 
   /**
    * Runs immediately before a tool is invoked.
-   * @param context - The agent context for this run (shared, mutable).
-   * @param toolUse - The tool call descriptor emitted by the model.
+   * @param params - Hook parameters.
    * @returns Optional context updates to merge into `context`.
    */
-  beforeToolUse?: (
-    context: AgentContext,
-    toolUse: ToolUseContent,
-  ) => Promise<Partial<AgentContext> | null | undefined | void>;
+  beforeToolUse?: (params: BeforeToolUseParams) => Promise<Partial<AgentContext> | null | undefined | void>;
   /**
    * Runs immediately after a tool invocation resolves.
-   * @param context - The agent context for this run (shared, mutable).
-   * @param toolUse - The tool call descriptor emitted by the model.
-   * @param toolResult - The raw result returned by the tool implementation.
+   * @param params - Hook parameters.
    * @returns Optional context updates to merge into `context`.
    */
-  afterToolUse?: (
-    context: AgentContext,
-    toolUse: ToolUseContent,
-    toolResult: unknown,
-  ) => Promise<Partial<AgentContext> | null | undefined | void>;
+  afterToolUse?: (params: AfterToolUseParams) => Promise<Partial<AgentContext> | null | undefined | void>;
 }

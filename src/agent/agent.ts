@@ -187,7 +187,7 @@ export class Agent {
   private async _beforeModel(modelContext: ModelContext) {
     for (const middleware of this.middlewares) {
       if (!middleware.beforeModel) continue;
-      const result = await middleware.beforeModel(modelContext, this._context);
+      const result = await middleware.beforeModel({ modelContext, agentContext: this._context });
       if (result) {
         Object.assign(modelContext, result);
       }
@@ -197,7 +197,7 @@ export class Agent {
   private async _afterModel(message: AssistantMessage) {
     for (const middleware of this.middlewares) {
       if (!middleware.afterModel) continue;
-      const result = await middleware.afterModel(this._context, message);
+      const result = await middleware.afterModel({ agentContext: this._context, message });
       if (result) {
         Object.assign(message, result);
       }
@@ -207,7 +207,7 @@ export class Agent {
   private async _beforeAgentRun() {
     for (const middleware of this.middlewares) {
       if (!middleware.beforeAgentRun) continue;
-      const result = await middleware.beforeAgentRun(this._context);
+      const result = await middleware.beforeAgentRun({ agentContext: this._context });
       if (result) {
         Object.assign(this._context, result);
       }
@@ -217,7 +217,7 @@ export class Agent {
   private async _afterAgentRun() {
     for (const middleware of this.middlewares) {
       if (!middleware.afterAgentRun) continue;
-      const result = await middleware.afterAgentRun(this._context);
+      const result = await middleware.afterAgentRun({ agentContext: this._context });
       if (result) {
         Object.assign(this._context, result);
       }
@@ -227,7 +227,7 @@ export class Agent {
   private async _beforeAgentStep(step: number) {
     for (const middleware of this.middlewares) {
       if (!middleware.beforeAgentStep) continue;
-      const result = await middleware.beforeAgentStep(this._context, step);
+      const result = await middleware.beforeAgentStep({ agentContext: this._context, step });
       if (result) {
         Object.assign(this._context, result);
       }
@@ -237,7 +237,7 @@ export class Agent {
   private async _afterAgentStep(step: number) {
     for (const middleware of this.middlewares) {
       if (!middleware.afterAgentStep) continue;
-      const result = await middleware.afterAgentStep(this._context, step);
+      const result = await middleware.afterAgentStep({ agentContext: this._context, step });
       if (result) {
         Object.assign(this._context, result);
       }
@@ -247,7 +247,7 @@ export class Agent {
   private async _beforeToolUse(toolUse: ToolUseContent) {
     for (const middleware of this.middlewares) {
       if (!middleware.beforeToolUse) continue;
-      const result = await middleware.beforeToolUse(this._context, toolUse);
+      const result = await middleware.beforeToolUse({ agentContext: this._context, toolUse });
       if (result) {
         Object.assign(this._context, result);
       }
@@ -257,7 +257,7 @@ export class Agent {
   private async _afterToolUse(toolUse: ToolUseContent, toolResult: unknown) {
     for (const middleware of this.middlewares) {
       if (!middleware.afterToolUse) continue;
-      const result = await middleware.afterToolUse(this._context, toolUse, toolResult);
+      const result = await middleware.afterToolUse({ agentContext: this._context, toolUse, toolResult });
       if (result) {
         Object.assign(this._context, result);
       }
