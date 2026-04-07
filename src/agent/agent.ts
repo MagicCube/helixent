@@ -119,6 +119,7 @@ export class Agent {
     for (let step = 1; step <= this.options.maxSteps; step++) {
       await this._beforeAgentStep(step);
       const assistantMessage = await this._think();
+      await this._afterModel(assistantMessage);
       yield assistantMessage;
 
       const toolUses = this._extractToolUses(assistantMessage);
@@ -189,6 +190,16 @@ export class Agent {
       const result = await middleware.beforeModel(modelContext, this._context);
       if (result) {
         Object.assign(modelContext, result);
+      }
+    }
+  }
+
+  private async _afterModel(message: AssistantMessage) {
+    for (const middleware of this.middlewares) {
+      if (!middleware.afterModel) continue;
+      const result = await middleware.afterModel(this._context, message);
+      if (result) {
+        Object.assign(message, result);
       }
     }
   }

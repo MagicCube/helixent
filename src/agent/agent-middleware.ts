@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 
-import type { ModelContext, ToolUseContent } from "@/foundation";
+import type { AssistantMessage, ModelContext, ToolUseContent } from "@/foundation";
 
 import type { AgentContext } from "./agent";
 
@@ -17,10 +17,27 @@ import type { AgentContext } from "./agent";
  * All hooks are optional.
  */
 export interface AgentMiddleware {
+  /**
+   * Runs immediately before the model is invoked.
+   * @param modelContext - The model context for this run (shared, mutable).
+   * @param agentContext - The agent context for this run (shared, mutable).
+   * @returns Optional model context updates to merge into `modelContext`.
+   */
   beforeModel?: (
     modelContext: ModelContext,
     agentContext: AgentContext,
   ) => Promise<Partial<ModelContext> | null | undefined | void>;
+
+  /**
+   * Runs immediately after the model is invoked.
+   * @param context - The agent context for this run (shared, mutable).
+   * @param message - The assistant message for this run (shared, mutable).
+   * @returns Optional message updates to merge into `message`.
+   */
+  afterModel?: (
+    context: AgentContext,
+    message: AssistantMessage,
+  ) => Promise<Partial<AssistantMessage> | null | undefined | void>;
 
   /**
    * Runs once after the user message is appended, before the first step begins.
