@@ -6,6 +6,7 @@ import { OpenAIModelProvider } from "@/community/openai";
 import { Model } from "@/foundation";
 
 import { App } from "./tui";
+import { AgentLoopProvider } from "./tui/hooks/use-agent-loop";
 
 let agent!: Agent;
 
@@ -26,7 +27,11 @@ async function setup() {
 }
 
 function main() {
-  render(<App agent={agent} />);
+  render(
+    <AgentLoopProvider agent={agent}>
+      <App />
+    </AgentLoopProvider>,
+  );
 }
 
 console.info();

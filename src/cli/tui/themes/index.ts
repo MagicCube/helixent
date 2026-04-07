@@ -3,8 +3,8 @@ export const defaultTheme = {
     primary: "blue",
     highlightedText: "white",
     secondaryText: "gray",
-    borderColor: "gray",
     secondaryBackground: "#3a3a3a",
+    borderColor: "gray",
   },
 };
 
