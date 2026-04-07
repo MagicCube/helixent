@@ -1,8 +1,10 @@
 import { Box, Text } from "ink";
 
+import { useAgentLoop } from "../hooks/use-agent-loop";
 import { currentTheme } from "../themes";
 
 export function Header() {
+  const { agent } = useAgentLoop();
   return (
     <Box columnGap={2}>
       <Logo />
@@ -12,7 +14,7 @@ export function Header() {
           <Text color={currentTheme.colors.secondaryText}>v0.1.0</Text>
         </Box>
         <Box>
-          <Text color={currentTheme.colors.secondaryText}>doubao-seed-2.0-code</Text>
+          <Text color={currentTheme.colors.secondaryText}>{agent.model.name}</Text>
         </Box>
         <Box columnGap={1}>
           <Text color={currentTheme.colors.secondaryText}>{process.cwd()}</Text>
