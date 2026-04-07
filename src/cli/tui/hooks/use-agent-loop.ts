@@ -41,12 +41,13 @@ export function useAgentLoop() {
         return;
       }
 
+      if (streamingRef.current) return;
+
       if (text === "/clear") {
         setMessages([]);
         return;
       }
 
-      if (streamingRef.current) return;
       setStreaming(true);
 
       try {

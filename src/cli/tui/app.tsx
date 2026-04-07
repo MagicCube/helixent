@@ -14,10 +14,7 @@ export function App() {
       <MessageHistory messages={messages} streaming={streaming} />
       <StreamingIndicator streaming={streaming} />
       <InputBox
-        onSubmit={async (text) => {
-          if (streaming) return;
-          await onSubmit(text);
-        }}
+        onSubmit={onSubmit}
         onAbort={abort}
       />
     </Box>
