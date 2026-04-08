@@ -4,6 +4,9 @@ import type { ReactNode } from "react";
 import type { Agent } from "@/agent";
 import type { NonSystemMessage, UserMessage } from "@/foundation";
 
+import type { PromptSubmission } from "../command-registry";
+import { resolveBuiltinCommand } from "../command-registry";
+
 const AgentLoopContext = createContext<Agent | null>(null);
 
 export function AgentLoopProvider({ agent, children }: { agent: Agent; children: ReactNode }) {
@@ -35,15 +38,18 @@ export function useAgentLoop() {
   }, [agent]);
 
   const onSubmit = useCallback(
-    async (text: string) => {
-      if (text === "exit" || text === "quit" || text === "/exit" || text === "/quit") {
+    async (submission: PromptSubmission) => {
+      const { text, requestedSkillName } = submission;
+      const builtinCommand = resolveBuiltinCommand(text);
+
+      if (builtinCommand === "exit" || builtinCommand === "quit") {
         process.exit(0);
         return;
       }
 
       if (streamingRef.current) return;
 
-      if (text === "/clear") {
+      if (builtinCommand === "clear") {
         setMessages([]);
         return;
       }
@@ -51,6 +57,7 @@ export function useAgentLoop() {
       setStreaming(true);
 
       try {
+        agent.setRequestedSkillName(requestedSkillName);
         const userMessage: UserMessage = { role: "user", content: [{ type: "text", text }] };
         setMessages((prev) => [...prev, userMessage]);
 
@@ -62,6 +69,7 @@ export function useAgentLoop() {
         if (isAbortError(error)) return;
         throw error;
       } finally {
+        agent.setRequestedSkillName(null);
         setStreaming(false);
       }
     },

@@ -1,5 +1,6 @@
 import { Box } from "ink";
 
+import type { SlashCommand } from "./command-registry";
 import { Footer } from "./components/footer";
 import { Header } from "./components/header";
 import { InputBox } from "./components/input-box";
@@ -13,7 +14,7 @@ function allDone(todos?: { status: string }[]) {
   return !!todos?.length && todos.every((t) => t.status === "completed" || t.status === "cancelled");
 }
 
-export function App() {
+export function App({ commands }: { commands: SlashCommand[] }) {
   const { streaming, messages, onSubmit, abort } = useAgentLoop();
   const latestTodos = getLatestTodos(messages);
   const nextTodo = getNextTodo(latestTodos)?.content;
@@ -26,7 +27,7 @@ export function App() {
         <MessageHistory messages={messages} streaming={streaming} />
         <StreamingIndicator streaming={streaming} nextTodo={nextTodo} />
         {!hideTodos && <TodoPanel todos={latestTodos} />}
-        <InputBox onSubmit={onSubmit} onAbort={abort} />
+        <InputBox commands={commands} onSubmit={onSubmit} onAbort={abort} />
       </Box>
       <Footer />
     </Box>

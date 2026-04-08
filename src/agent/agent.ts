@@ -24,6 +24,8 @@ export interface AgentContext {
   tools?: Tool[];
   /** The skills to use to invoke the agent. */
   skills?: SkillFrontmatter[];
+  /** Explicitly requested skill for the next run, when set by the caller. */
+  requestedSkillName?: string | null;
 }
 
 /**
@@ -108,6 +110,10 @@ export class Agent {
    */
   get tools() {
     return this._context.tools;
+  }
+
+  setRequestedSkillName(requestedSkillName: string | null) {
+    this._context.requestedSkillName = requestedSkillName;
   }
 
   /**

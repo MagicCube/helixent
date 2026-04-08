@@ -1,3 +1,5 @@
+import { join } from "path";
+
 import { render } from "ink";
 
 import type { Agent } from "@/agent";
@@ -8,9 +10,11 @@ import { OpenAIModelProvider } from "@/community/openai";
 import { Model } from "@/foundation";
 
 import { App } from "./tui";
+import { loadAvailableCommands, type SlashCommand } from "./tui/command-registry";
 import { AgentLoopProvider } from "./tui/hooks/use-agent-loop";
 
 let agent!: Agent;
+let commands: SlashCommand[] = [];
 
 async function setup() {
   const config = loadConfig();
@@ -31,13 +35,15 @@ async function setup() {
     },
   });
 
-  agent = await createCodingAgent({ model });
+  const skillsDirs = [join(process.cwd(), "skills")];
+  agent = await createCodingAgent({ model, skillsDirs });
+  commands = await loadAvailableCommands(skillsDirs);
 }
 
 function main() {
   render(
     <AgentLoopProvider agent={agent}>
-      <App />
+      <App commands={commands} />
     </AgentLoopProvider>,
   );
 }

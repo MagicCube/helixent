@@ -1,40 +1,13 @@
-import type { Dirent } from "fs";
-import fs, { exists } from "fs/promises";
-import { join } from "path";
-
 import type { AgentMiddleware } from "../agent-middleware";
 
-import { readSkillFrontMatter } from "./skill-reader";
-import type { SkillFrontmatter } from "./types";
+import { listSkills } from "./list-skills";
 
 export function createSkillsMiddleware(
-  skillsDirs: string[] = [join(process.cwd(), "skills")],
+  skillsDirs?: string[],
 ): AgentMiddleware {
   return {
     beforeAgentRun: async () => {
-      const skills: SkillFrontmatter[] = [];
-      const seenSkillFiles = new Set<string>();
-
-      for (const skillsDir of skillsDirs) {
-        let folders: Dirent[];
-        try {
-          folders = await fs.readdir(skillsDir, { withFileTypes: true });
-        } catch {
-          // Missing/invalid skills directory; treat as empty.
-          continue;
-        }
-
-        for (const folder of folders) {
-          const skillFilePath = join(skillsDir, folder.name, "SKILL.md");
-          if (!folder.isDirectory()) continue;
-          if (seenSkillFiles.has(skillFilePath)) continue;
-          if (!(await exists(skillFilePath))) continue;
-
-          seenSkillFiles.add(skillFilePath);
-          const frontmatter = await readSkillFrontMatter(skillFilePath);
-          skills.push(frontmatter);
-        }
-      }
+      const skills = await listSkills(skillsDirs);
       return {
         skills,
       };
@@ -42,6 +15,12 @@ export function createSkillsMiddleware(
 
     beforeModel: async ({ modelContext, agentContext }) => {
       if (agentContext.skills && agentContext.skills.length > 0) {
+        const requestedSkill = agentContext.requestedSkillName
+          ? agentContext.skills.find(
+              (skill) => skill.name.toLowerCase() === agentContext.requestedSkillName?.toLowerCase(),
+            )
+          : null;
+
         return {
           prompt:
             modelContext.prompt +
@@ -51,10 +30,17 @@ You have access to skills that provide optimized workflows for specific tasks. E
 
 **Progressive Loading Pattern:**
 1. When a user query matches a skill's use case, immediately call \`read_file\` on the skill's main file using the path attribute provided in the skill tag below
-2. Read and understand the skill's workflow and instructions
-3. The skill file contains references to external resources under the same folder
-4. Load referenced resources only when needed during execution
-5. Follow the skill's instructions precisely
+2. If an explicit requested skill is provided in the system context, load that skill first even if the user message is short
+3. Read and understand the skill's workflow and instructions
+4. The skill file contains references to external resources under the same folder
+5. Load referenced resources only when needed during execution
+6. Follow the skill's instructions precisely
+
+${requestedSkill ? `<explicit_skill_invocation>
+The user explicitly selected the skill "${requestedSkill.name}" from the slash command picker.
+You must read the matching skill file at "${requestedSkill.path}" before answering.
+</explicit_skill_invocation>
+` : ""}
 
 <skills>
 ${JSON.stringify(agentContext.skills, null, 2)}
