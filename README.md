@@ -9,9 +9,12 @@
 
 Helixent is a blue rabbit that writes code. It includes an Agent Loop, a Coding Agent, and a nice CLI.
 
+## Demo
+
+https://github.com/user-attachments/assets/4ad89f14-e338-43e4-82ce-91cb83d58be2
+
 ## Index
 
-- [Demo](#demo)
 - [Quick Start (CLI mode)](#quick-start-cli-mode)
   - [1. Install dependencies](#1-install-dependencies)
   - [2. Build the binary](#2-build-the-binary)
@@ -27,10 +30,6 @@ Helixent is a blue rabbit that writes code. It includes an Agent Loop, a Coding 
   - [Available hooks](#available-hooks)
 - [Why Bun?](#why-bun)
 - [Roadmap](#roadmap)
-
-## Demo
-
-https://github.com/user-attachments/assets/4ad89f14-e338-43e4-82ce-91cb83d58be2
 
 ## Quick Start (CLI mode)
 
