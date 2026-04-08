@@ -12,7 +12,7 @@ let agent!: Agent;
 
 async function setup() {
   const provider = new OpenAIModelProvider({
-    baseURL: "https://ark.cn-beijing.volces.com/api/v3",
+    baseURL: process.env.BASE_URL ?? "https://ark.cn-beijing.volces.com/api/v3",
     apiKey: process.env.ARK_API_KEY,
   });
 
