@@ -16,31 +16,30 @@ https://github.com/user-attachments/assets/4ad89f14-e338-43e4-82ce-91cb83d58be2
 
 ## Index
 
-- [Demo](#demo)
 - [Get Started](#get-started)
   - [Key Features](#key-features)
-  - [Install and Run](#install-globally-and-run)
-  - [Run via npx Without Installing](#run-via-npx-without-installing)
-- [For Developers Who Want to Contribute to Helixent](#for-developers-who-want-to-contribute-to-helixent)
-  - [Develop & Build from Source](#develop--build-from-source)
-    - [1. Install Dependencies](#1-install-dependencies)
-    - [2. Build the Binary](#2-build-the-binary)
-    - [3. Symlink into Your PATH (macOS)](#3-symlink-into-your-path-macos)
-    - [4. Run the CLI](#4-run-the-cli)
+  - [Install and Run](#install-and-run)
+    - [Option 1: Install and Run](#option-1-install-and-run)
+    - [Option 2: Run without Installing](#option-2-run-without-installing)
 - [Model Configuration](#model-configuration)
   - [List Configured Models](#list-configured-models)
   - [Add a New Model](#add-a-new-model)
   - [Remove a Model](#remove-a-model)
   - [Set the Default Model](#set-the-default-model)
-- [Architecture](#architecture)
-  - [Layer 1: Foundation](#layer-1-foundation)
-  - [Layer 2: Agent Loop](#layer-2-agent-loop)
-  - [Layer 3: Coding Agent](#layer-3-coding-agent)
+- [How to Contribute to Helixent](#how-to-contribute-to-helixent)
+  - [Develop & Build from Source](#develop-build-from-source)
+    - [1. Install Dependencies](#1-install-dependencies)
+    - [2. Run in Development Mode](#2-run-in-development-mode)
+    - [3. Build the Binary](#3-build-the-binary)
+  - [Architecture](#architecture)
+    - [Layer 1: Foundation](#layer-1-foundation)
+    - [Layer 2: Agent Loop](#layer-2-agent-loop)
+    - [Layer 3: Coding Agent](#layer-3-coding-agent)
   - [Community](#community)
-  - [How to Build a Coding Agent from Scratch](#how-to-build-a-coding-agent-from-scratch)
-- [Middleware](#middleware)
-  - [Available Hooks](#available-hooks)
-- [Why Bun?](#why-bun)
+    - [How to Build a Coding Agent from Scratch](#how-to-build-a-coding-agent-from-scratch)
+  - [Middleware](#middleware)
+    - [Available Hooks](#available-hooks)
+  - [Why Bun?](#why-bun)
 - [Roadmap](#roadmap)
 
 ---
@@ -73,11 +72,11 @@ https://github.com/user-attachments/assets/4ad89f14-e338-43e4-82ce-91cb83d58be2
 - **CLI**
   - A CLI (with TUI support) for running agents interactively and iterating quickly.
 
----
-
 Helixent is now available on [`npm`](https://www.npmjs.com/package/helixent), so you can install globally and run, or choose to run via npx without installing:
 
-### Option 1: Install and Run
+### Install and Run
+
+#### Option 1: Install and Run
 
 ```bash
 npm install -g helixent@latest
@@ -86,62 +85,13 @@ helixent
 helixent --help
 ```
 
-### Option 2: Run via npx Without Installing
+#### Option 2: Run without Installing
 
 ```bash
 cd path/to/your/project
 npx helixent@latest
 npx helixent --help
 ```
-
----
-
-## For Developers Who Want to Contribute to Helixent
-
-### Develop & Build from Source
-
-This section shows how to build Helixent from source and link the `helixent` CLI into your global PATH on **macOS**.
-
-### 1. Install Dependencies
-
-```bash
-bun install
-```
-
-### 2. Build the Binary
-
-```bash
-bun run build:bin
-```
-
-After the build completes, you should have:
-
-- `dist/bin/helixent`
-
-### 3. Symlink into Your PATH (macOS)
-
-Pick the Homebrew prefix that matches your machine:
-
-- Apple Silicon (common): `/opt/homebrew/bin`
-- Intel (common): `/usr/local/bin`
-
-```bash
-# Apple Silicon (/opt/homebrew/bin)
-sudo ln -sf "$(pwd)/dist/bin/helixent" /opt/homebrew/bin/helixent
-
-# Intel (/usr/local/bin)
-sudo ln -sf "$(pwd)/dist/bin/helixent" /usr/local/bin/helixent
-```
-
-### 4. Run the CLI
-
-```bash
-helixent
-```
-
-Follow the prompts to complete the initial setup. Your config file will be automatically created at:
-
-- `~/.helixent/config.yaml`
 
 ## Model Configuration
 
@@ -185,7 +135,37 @@ Or select from the list of configured models:
 helixent config model set-default
 ```
 
-## Architecture
+---
+
+## How to Contribute to Helixent
+
+### Develop & Build from Source
+
+This section shows how to build Helixent from source and link the `helixent` CLI into your global PATH on **macOS**.
+
+#### 1. Install Dependencies
+
+```bash
+bun install
+```
+
+#### 2. Run in Development Mode
+
+```bash
+bun run dev
+```
+
+#### 3. Build the Binary
+
+```bash
+bun run build:bin
+```
+
+After the build completes, you should have:
+
+- `dist/bin/helixent`
+
+### Architecture
 
 Helixent is organized into three layers, plus a `community` area for third-party integrations.
 
@@ -197,7 +177,7 @@ src/
 └── community/     # Third-party integrations (e.g. OpenAI)
 ```
 
-### Layer 1: Foundation
+#### Layer 1: Foundation
 
 Core primitives that everything else builds on:
 
@@ -205,7 +185,7 @@ Core primitives that everything else builds on:
 - **Message** — A single transcript type that flows end-to-end through the system — the single source of truth for the conversation.
 - **Tool** — Tool definitions and execution plumbing (the "actions" an agent can invoke).
 
-### Layer 2: Agent Loop
+#### Layer 2: Agent Loop
 
 A reusable **ReAct-style agent loop**:
 
@@ -216,7 +196,7 @@ A reusable **ReAct-style agent loop**:
 
 This layer depends only on Foundation and remains generic — not tied to any specific domain.
 
-### Layer 3: Coding Agent
+#### Layer 3: Coding Agent
 
 A domain-specific agent built on top of the generic agent loop, pre-configured with coding-oriented tools (`read_file`, `write_file`, `str_replace`, `bash`, etc.) and the skills middleware.
 
@@ -226,7 +206,7 @@ Optional, decoupled adapters that implement Foundation interfaces for specific p
 
 - `community/openai` — `OpenAIModelProvider` backed by the `openai` SDK, compatible with any OpenAI-compatible endpoint.
 
-### How to Build a Coding Agent from Scratch
+#### How to Build a Coding Agent from Scratch
 
 Here is a complete example that creates a coding agent using an OpenAI-compatible provider:
 
@@ -269,11 +249,11 @@ for await (const message of stream) {
 }
 ```
 
-## Middleware
+### Middleware
 
 Helixent provides a **middleware** system that lets you observe and mutate the agent's behavior at every stage of the loop. Middleware hooks are invoked sequentially in array order.
 
-### Available Hooks
+#### Available Hooks
 
 | Hook | When it runs |
 |---|---|
@@ -288,7 +268,7 @@ Helixent provides a **middleware** system that lets you observe and mutate the a
 
 Each hook receives the current context and can return a partial update to merge back in, or `void` to leave it unchanged.
 
-## Why Bun?
+### Why Bun?
 
 Agent loops are inherently asynchronous — the model thinks, tools execute, results stream back, often in parallel. JavaScript/TypeScript has **native async/await** baked into the language and runtime, making concurrent orchestration straightforward without the callback gymnastics or `asyncio` boilerplate you'd face in Python.
 
@@ -298,6 +278,8 @@ Among JS runtimes, we chose [**Bun**](https://bun.com/) specifically because:
 - **Performance** — HTTP, filesystem I/O, and cold starts are all noticeably faster than Node's, which adds up when an agent loop issues dozens of tool calls per run.
 - **Standalone executables** — `bun build --compile` outputs one self-contained binary. Shipping a CLI is as simple as handing users a single file—no separate runtime install.
 - **Batteries included** — Test runner, bundler, and TypeScript support ship with Bun, so there's no separate toolchain to wire up.
+
+---
 
 ## Roadmap
 
