@@ -251,7 +251,6 @@ function summarizeToolResult(content: string, toolUse?: ToolUseContent) {
 
   switch (toolUse.name) {
     case "todo_write":
-    case "read_file":
     case "bash":
     case "write_file":
     case "str_replace":
