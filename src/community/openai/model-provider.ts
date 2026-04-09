@@ -5,6 +5,19 @@ import type { Message, ModelProvider, Tool } from "@/foundation";
 
 import { convertToOpenAIMessages, convertToOpenAITools, parseAssistantMessage } from "./utils";
 
+function toTokenUsage(usage?: {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+}) {
+  if (!usage) return undefined;
+  return {
+    promptTokens: usage.prompt_tokens ?? 0,
+    completionTokens: usage.completion_tokens ?? 0,
+    totalTokens: usage.total_tokens ?? 0,
+  };
+}
+
 /**
  * A provider for the OpenAI API.
  */
@@ -39,7 +52,7 @@ export class OpenAIModelProvider implements ModelProvider {
       top_p: 0,
       ...options,
     } satisfies ChatCompletionCreateParamsNonStreaming;
-    const { choices } = await this._client.chat.completions.create(params, { signal });
-    return parseAssistantMessage(choices[0]!.message!);
+    const response = await this._client.chat.completions.create(params, { signal });
+    return parseAssistantMessage(response.choices[0]!.message!, toTokenUsage(response.usage));
   }
 }

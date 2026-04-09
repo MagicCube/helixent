@@ -2,26 +2,21 @@ import { createContext, createElement, useCallback, useContext, useEffect, useMe
 import type { ReactNode } from "react";
 
 import type { Agent } from "@/agent";
-import type { NonSystemMessage, UserMessage } from "@/foundation";
+import type { AssistantMessage, NonSystemMessage, UserMessage } from "@/foundation";
 
-const AgentLoopContext = createContext<Agent | null>(null);
+type AgentLoopState = {
+  agent: Agent;
+  streaming: boolean;
+  messages: NonSystemMessage[];
+  // eslint-disable-next-line no-unused-vars
+  onSubmit: (...args: [string]) => Promise<void>;
+  abort: () => void;
+  tokenCount: number;
+};
+
+const AgentLoopContext = createContext<AgentLoopState | null>(null);
 
 export function AgentLoopProvider({ agent, children }: { agent: Agent; children: ReactNode }) {
-  const value = useMemo(() => agent, [agent]);
-  return createElement(AgentLoopContext.Provider, { value }, children);
-}
-
-function useAgent(): Agent {
-  const agent = useContext(AgentLoopContext);
-  if (!agent) {
-    throw new Error("useAgentLoop() must be used within <AgentLoopProvider agent={...}>");
-  }
-  return agent;
-}
-
-export function useAgentLoop() {
-  const agent = useAgent();
-
   const [streaming, setStreaming] = useState(false);
   const [messages, setMessages] = useState<NonSystemMessage[]>([]);
 
@@ -69,6 +64,10 @@ export function useAgentLoop() {
     agent.abort();
   }, [agent]);
 
+  const tokenCount = useMemo(() => {
+    return calculateTotalTokens(messages);
+  }, [messages]);
+
   const onSubmit = useCallback(
     async (text: string) => {
       if (text === "exit" || text === "quit" || text === "/exit" || text === "/quit") {
@@ -107,7 +106,42 @@ export function useAgentLoop() {
     [agent, enqueueMessage, flushPendingMessages],
   );
 
-  return { agent, streaming, messages, onSubmit, abort };
+  const value = useMemo(
+    () => ({
+      agent,
+      streaming,
+      messages,
+      onSubmit,
+      abort,
+      tokenCount,
+    }),
+    [abort, agent, messages, onSubmit, streaming, tokenCount],
+  );
+
+  return createElement(AgentLoopContext.Provider, { value }, children);
+}
+
+function useAgentLoopState(): AgentLoopState {
+  const state = useContext(AgentLoopContext);
+  if (!state) {
+    throw new Error("useAgentLoop() must be used within <AgentLoopProvider agent={...}>");
+  }
+  return state;
+}
+
+function calculateTotalTokens(messages: NonSystemMessage[]): number {
+  return messages.reduce((total, message) => {
+    if (!isAssistantMessage(message)) return total;
+    return total + (message.usage?.totalTokens ?? 0);
+  }, 0);
+}
+
+function isAssistantMessage(message: NonSystemMessage): message is AssistantMessage {
+  return message.role === "assistant";
+}
+
+export function useAgentLoop() {
+  return useAgentLoopState();
 }
 
 function isAbortError(error: unknown): boolean {

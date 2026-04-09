@@ -1,5 +1,11 @@
 import type { AssistantMessageContent, SystemMessageContent, ToolMessageContent, UserMessageContent } from "./content";
 
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
 /**
  * System prompt or policy text for the model.
  */
@@ -28,6 +34,8 @@ export interface AssistantMessage {
   role: "assistant";
   /** Text, optional reasoning, and/or tool calls; see {@link AssistantMessageContent}. */
   content: AssistantMessageContent;
+  /** Provider-reported token usage for the request that produced this message, when available. */
+  usage?: TokenUsage;
 }
 
 /**

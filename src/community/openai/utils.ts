@@ -6,7 +6,7 @@ import type {
   ChatCompletionTool,
 } from "openai/resources";
 
-import type { AssistantMessage, Message, Tool } from "@/foundation";
+import type { AssistantMessage, Message, TokenUsage, Tool } from "@/foundation";
 
 /**
  * Converts the messages to OpenAI ChatCompletionMessageParam messages.
@@ -68,10 +68,12 @@ export function convertToOpenAIMessages(messages: Message[]): ChatCompletionMess
  */
 export function parseAssistantMessage(
   message: ChatCompletionMessage & { reasoning_content?: string },
+  usage?: TokenUsage,
 ): AssistantMessage {
   const result: AssistantMessage = {
     role: "assistant",
     content: [],
+    usage,
   };
   if (typeof message.reasoning_content === "string") {
     result.content.push({ type: "thinking", thinking: message.reasoning_content });
