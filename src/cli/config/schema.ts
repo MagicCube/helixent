@@ -4,6 +4,7 @@ export const modelEntrySchema = z.object({
   name: z.string().min(1),
   baseURL: z.string().min(1),
   APIKey: z.string().min(1),
+  options: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const helixentConfigSchema = z.object({

@@ -7,13 +7,35 @@ import type { ModelEntry } from "@/cli/config";
 import { MODEL_PROVIDERS } from "../model-providers";
 import { currentTheme } from "../tui/themes";
 
+const KIMI_MODEL_PRESETS: { prefix: string; options: Record<string, unknown> }[] = [
+  { prefix: "kimi-k2-thinking", options: { temperature: 1, top_p: 1 } },
+  { prefix: "kimi-k2.5", options: { temperature: 1, top_p: 0.95 } },
+  { prefix: "kimi-k2", options: { temperature: 0.6, top_p: 1 } },
+  { prefix: "moonshot-v1", options: { temperature: 0, top_p: 1 } },
+];
+
 type Step = "provider" | "apiKey" | "modelName" | "baseURL" | "confirm";
 
-function buildModelEntry(baseURL: string, apiKey: string, modelName: string): ModelEntry {
+function buildModelEntry(baseURL: string, apiKey: string, modelName: string, providerId: string): ModelEntry {
+  const cleanModelName = modelName.trim();
+  
+  let options: Record<string, unknown> | undefined = undefined;
+  if (providerId === "kimi" || cleanModelName.startsWith("kimi-") || cleanModelName.startsWith("moonshot-")) {
+    const preset = KIMI_MODEL_PRESETS.find((p) => 
+      cleanModelName === p.prefix || 
+      cleanModelName.startsWith(`${p.prefix}-`) || 
+      cleanModelName.startsWith(`${p.prefix}_`)
+    );
+    if (preset) {
+      options = preset.options;
+    }
+  }
+
   return {
-    name: modelName.trim(),
+    name: cleanModelName,
     baseURL: baseURL.trim(),
     APIKey: apiKey.trim(),
+    ...(options ? { options } : {}),
   };
 }
 
@@ -75,7 +97,7 @@ function ModelWizard({ onComplete, onAbort }: ModelWizardProps) {
 
   const finishWithBaseURL = (url: string) => {
     setCustomBaseURL(url);
-    const entry = buildModelEntry(url, apiKey, modelName);
+    const entry = buildModelEntry(url, apiKey, modelName, selectedProvider.id);
     setPendingEntry(entry);
     setStep("confirm");
   };
@@ -84,7 +106,7 @@ function ModelWizard({ onComplete, onAbort }: ModelWizardProps) {
     if (!selectedProvider.baseURL) {
       setStep("baseURL");
     } else {
-      const entry = buildModelEntry(selectedProvider.baseURL, apiKey, modelName);
+      const entry = buildModelEntry(selectedProvider.baseURL, apiKey, modelName, selectedProvider.id);
       setPendingEntry(entry);
       setStep("confirm");
     }
@@ -139,6 +161,16 @@ function ModelWizard({ onComplete, onAbort }: ModelWizardProps) {
   }
 
   if (step === "modelName") {
+    const placeholders: Record<string, string> = {
+      openai: "e.g. gpt-4o",
+      volcengine: "e.g. ep-xxx-xxx",
+      volcengine_coding_plan: "e.g. doubao-seed-2.0-code",
+      deepseek: "e.g. deepseek-coder",
+      kimi: "e.g. kimi-k2.5",
+      other: "e.g. my-custom-model",
+    };
+    const placeholder = placeholders[selectedProvider.id] || "e.g. doubao-seed-2.0-code";
+
     return (
       <Box flexDirection="column" rowGap={1}>
         <Text bold>Enter a model name</Text>
@@ -146,7 +178,7 @@ function ModelWizard({ onComplete, onAbort }: ModelWizardProps) {
           <Text>Model: </Text>
           <TextInput
             value={modelName}
-            placeholder="e.g. doubao-seed-2.0-code"
+            placeholder={placeholder}
             onChange={setModelName}
             onSubmit={goFromModelName}
           />

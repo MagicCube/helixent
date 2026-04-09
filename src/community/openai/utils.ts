@@ -19,13 +19,17 @@ export function convertToOpenAIMessages(messages: Message[]): ChatCompletionMess
     if (message.role === "system" || message.role === "user") {
       openaiMessages.push(message);
     } else if (message.role === "assistant") {
-      const assistantMessage: ChatCompletionAssistantMessageParam = {
+      const assistantMessage: ChatCompletionAssistantMessageParam & { reasoning_content?: string } = {
         role: "assistant",
         content: [],
       };
       for (const content of message.content) {
         if (content.type === "thinking") {
-          continue;
+          if (!assistantMessage.reasoning_content) {
+            assistantMessage.reasoning_content = content.thinking;
+          } else {
+            assistantMessage.reasoning_content += "\n" + content.thinking;
+          }
         } else if (content.type === "tool_use") {
           if (!assistantMessage.tool_calls) {
             assistantMessage.tool_calls = [];
@@ -42,7 +46,18 @@ export function convertToOpenAIMessages(messages: Message[]): ChatCompletionMess
           (assistantMessage.content as ChatCompletionContentPart[]).push(content);
         }
       }
-      if (assistantMessage.content?.length === 0) {
+      if (Array.isArray(assistantMessage.content)) {
+        assistantMessage.content = assistantMessage.content.filter((part) => {
+          if (part.type === "text") {
+            return part.text.length > 0;
+          }
+          return true;
+        });
+
+        if (assistantMessage.content.length === 0) {
+          assistantMessage.content = "";
+        }
+      } else if (!assistantMessage.content) {
         assistantMessage.content = "";
       }
       openaiMessages.push(assistantMessage);

@@ -38,9 +38,10 @@ export class Model {
       messages.push({ role: "system", content: [{ type: "text", text: context.prompt }] });
     }
     messages.push(...context.messages);
+    const options = { ...this.options, ...context.options };
     return this.provider.invoke({
       model: this.name,
-      options: this.options,
+      options,
       messages: messages,
       tools: context.tools,
       signal: context.signal,

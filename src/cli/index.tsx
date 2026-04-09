@@ -50,6 +50,7 @@ if (args.length > 0) {
     thinking: {
       type: "enabled",
     },
+    ...entry.options,
   });
 
   const agent = await createCodingAgent({

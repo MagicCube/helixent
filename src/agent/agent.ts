@@ -196,7 +196,7 @@ export class Agent {
     });
 
     const abortPromise = signal
-      ? new Promise<never>((_, reject) => {
+      ? new Promise<{ index: number; toolUseId: string; result: string }>((_, reject) => {
           if (signal.aborted) {
             reject(signal.reason);
             return;
@@ -208,9 +208,9 @@ export class Agent {
     const remaining = new Set(pending.map((_, i) => i));
     while (remaining.size > 0) {
       const candidates = [...remaining].map((i) => pending[i]);
-      const resolved = (await (abortPromise
-        ? Promise.race([...candidates, abortPromise])
-        : Promise.race(candidates)))!;
+      const promisesToRace = abortPromise ? [...candidates, abortPromise] : candidates;
+      const resolved = await Promise.race(promisesToRace);
+      if (!resolved) continue; // abortPromise rejected first or race returned undefined, wait for next tool result
       remaining.delete(resolved.index);
 
       const toolMessage: ToolMessage = {
