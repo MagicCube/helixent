@@ -1,6 +1,6 @@
 import { Box, Text } from "ink";
 
-import { HELIXENT_VERSION } from "../../version";
+import packageJson from "../../../../package.json";
 import { useAgentLoop } from "../hooks/use-agent-loop";
 import { currentTheme } from "../themes";
 
@@ -12,7 +12,7 @@ export function Header() {
       <Box flexDirection="column">
         <Box columnGap={1}>
           <Text color={currentTheme.colors.primary}>Helixent</Text>
-          <Text color={currentTheme.colors.dimText}>v{HELIXENT_VERSION}</Text>
+          <Text color={currentTheme.colors.dimText}>v{packageJson.version}</Text>
         </Box>
         <Box>
           <Text color={currentTheme.colors.dimText}>{agent.model.name}</Text>

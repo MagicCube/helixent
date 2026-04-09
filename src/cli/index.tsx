@@ -10,15 +10,16 @@ import { createCodingAgent } from "@/coding";
 import { OpenAIModelProvider } from "@/community/openai";
 import { Model } from "@/foundation";
 
+import packageJson from "../../package.json";
+
 import { App } from "./tui";
 import { AgentLoopProvider } from "./tui/hooks/use-agent-loop";
-import { HELIXENT_NAME, HELIXENT_VERSION } from "./version";
 
 const program = new Command();
 program
-  .name(HELIXENT_NAME)
+  .name(packageJson.name)
   .description("Helixent — a blue rabbit that writes code")
-  .version(HELIXENT_VERSION, "-v, --version");
+  .version(packageJson.version, "-v, --version");
 
 registerCommands(program);
 
