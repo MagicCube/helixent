@@ -106,9 +106,20 @@ bun run lint
 bun run lint:fix
 bun run build:js
 bun run build:bin
+bun test
 ```
 
 Environment variables used by the sample root `index.ts` are provider-specific (e.g. `ARK_BASE_URL`, `ARK_API_KEY` for an OpenAI-compatible endpoint).
+
+## Testing
+
+Tests use Bun’s built-in runner: **`bun test`**.
+
+**Discovery (default):** Bun walks the tree from the current working directory and runs files whose names match `*.test.*`, `*_test.*`, `*.spec.*`, or `*_spec.*` (with extensions `js`, `jsx`, `ts`, or `tsx`). It skips `node_modules` and hidden directories (names starting with `.`). Optional `[test]` settings in `bunfig.toml` can narrow the scan (e.g. `root`, `pathIgnorePatterns`); see [Bun test discovery](https://bun.sh/docs/test/discovery).
+
+**Where to put tests:** Prefer **co-located** unit tests next to the code under test—e.g. `src/.../__tests__/foo.test.ts` or `foo.test.ts` beside `foo.ts`—so modules and tests stay easy to navigate together. A top-level `tests/` tree is fine for integration-style suites, large fixtures, or anything you want physically separate from `src/`. Bun does not require a specific folder name; naming patterns matter more than layout.
+
+**What must be tested:** **Not everything.** Unit tests are encouraged for pure logic, non-trivial algorithms, and regressions, but they are **not** a blanket requirement for every change. Thin glue, obvious pass-throughs, or exploratory edits may ship without new tests when the cost outweighs the benefit—use judgment and add tests when behavior is easy to break or hard to verify by hand.
 
 ## Notes: tool use rendering (CLI vs TUI)
 
@@ -126,4 +137,4 @@ If you want to de-duplicate in the future, prefer extracting a **shared structur
 
 ## Quality gate
 
-Run `bun run check` as the main gate (`tsc --noEmit` + ESLint). Use `bun run check:types` for type-check-only validation.
+Run `bun run check` as the main gate (`tsc --noEmit`, ESLint, and `bun test`). Use `bun run check:types` for type-check-only validation. The pre-commit hook (`.githooks/pre-commit`, install with `bun run hooks:install`) and GitHub Actions (`.github/workflows/check.yml`) both run this same command. Use `bun test` alone when iterating on tests (see **Testing**).

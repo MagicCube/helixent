@@ -37,7 +37,7 @@
     "hooks:install": "git config core.hooksPath .githooks",
     "build:bin": "rm -rf dist/bin && bun build index.ts --compile --outfile dist/bin/helixent",
     "build:js": "rm -rf dist/js && bun build ./src/index.ts --outdir ./dist/js --splitting --target bun",
-    "check": "tsc --noEmit && eslint . --ext .ts",
+    "check": "tsc --noEmit && eslint . --ext .ts && bun test",
     "check:types": "tsc --noEmit",
     "dev": "bun run index.ts",
     "lint": "eslint . --ext .ts",
