@@ -56,7 +56,7 @@ export class Model {
     return {
       model: this.name,
       options: this.options,
-      messages: context.messages,
+      messages,
       tools: context.tools,
       signal: context.signal,
     };
