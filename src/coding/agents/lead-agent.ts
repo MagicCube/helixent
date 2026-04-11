@@ -7,6 +7,7 @@ import type { Model, NonSystemMessage, ToolUseContent } from "@/foundation";
 
 import {
   type ApprovalDecision,
+  type ApprovalPersistence,
   CODING_TOOLS_REQUIRING_APPROVAL,
   createCodingApprovalMiddleware,
 } from "../permissions";
@@ -27,12 +28,14 @@ export async function createCodingAgent({
   cwd = process.cwd(),
   skillsDirs = [join(process.cwd(), ".agents/skills")],
   askUser,
+  approvalPersistence,
 }: {
   model: Model;
   cwd?: string;
   skillsDirs?: string[];
   // eslint-disable-next-line no-unused-vars
   askUser?: (toolUse: ToolUseContent) => Promise<ApprovalDecision>;
+  approvalPersistence?: ApprovalPersistence;
 }) {
   const agentsFile = Bun.file(`${cwd}/AGENTS.md`);
   const messages: NonSystemMessage[] = [];
@@ -57,6 +60,7 @@ export async function createCodingAgent({
         cwd,
         requiresApproval: CODING_TOOLS_REQUIRING_APPROVAL,
         askUser,
+        approvalPersistence,
       }),
     );
   }

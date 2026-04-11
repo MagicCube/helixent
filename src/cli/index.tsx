@@ -6,6 +6,7 @@ import { render } from "ink";
 import { validateIntegrity } from "@/cli/bootstrap";
 import { registerCommands } from "@/cli/commands";
 import { loadConfig } from "@/cli/config";
+import { SettingsLoader, SettingsWriter } from "@/cli/settings";
 import { createCodingAgent, globalApprovalManager } from "@/coding";
 import { OpenAIModelProvider } from "@/community/openai";
 import { Model } from "@/foundation";
@@ -58,16 +59,22 @@ if (args.length > 0) {
     "~/.helixent/skills",
   ];
 
+  const settingsLoader = new SettingsLoader();
+  const settingsWriter = new SettingsWriter(settingsLoader);
   const agent = await createCodingAgent({
     model,
     skillsDirs,
     askUser: globalApprovalManager.askUser,
+    approvalPersistence: {
+      loadAllowList: (cwd) => settingsLoader.loadAllowList(cwd),
+      persistAllowedTool: (cwd, toolName) => settingsWriter.appendAllowedTool(cwd, toolName),
+    },
   });
   const commands: SlashCommand[] = await loadAvailableCommands(skillsDirs);
 
   render(
     <AgentLoopProvider agent={agent}>
-      <App commands={commands} />
+      <App commands={commands} supportProjectWideAllow />
     </AgentLoopProvider>,
     { patchConsole: false },
   );

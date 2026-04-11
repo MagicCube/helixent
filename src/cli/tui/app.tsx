@@ -20,7 +20,13 @@ function allDone(todos?: { status: string }[]) {
   return !!todos?.length && todos.every((t) => t.status === "completed" || t.status === "cancelled");
 }
 
-export function App({ commands }: { commands: SlashCommand[] }) {
+export function App({
+  commands,
+  supportProjectWideAllow = false,
+}: {
+  commands: SlashCommand[];
+  supportProjectWideAllow?: boolean;
+}) {
   const { streaming, messages, onSubmit, abort } = useAgentLoop();
   const { approvalRequest, respondToApproval } = useApprovalManager();
   const { latestTodos, todoSnapshots, toolUses } = useMemo(() => buildTodoViewState(messages), [messages]);
@@ -52,7 +58,11 @@ export function App({ commands }: { commands: SlashCommand[] }) {
         {approvalRequest ? null : <StreamingIndicator streaming={streaming} nextTodo={nextTodo} />}
         {!hideTodos && <TodoPanel todos={latestTodos} />}
         {approvalRequest ? (
-          <ApprovalPrompt toolUse={approvalRequest.toolUse} onDecision={respondToApproval} />
+          <ApprovalPrompt
+            toolUse={approvalRequest.toolUse}
+            supportProjectWideAllow={supportProjectWideAllow}
+            onDecision={respondToApproval}
+          />
         ) : (
           <InputBox commands={commands} onSubmit={onSubmit} onAbort={abort} />
         )}
