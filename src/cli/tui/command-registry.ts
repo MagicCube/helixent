@@ -24,11 +24,22 @@ export const BUILTIN_COMMANDS: SlashCommand[] = [
     type: "builtin",
   },
   {
+    name: "help",
+    description: "List available slash commands, or show details for one (`/help <name>`)",
+    type: "builtin",
+  },
+  {
     name: "quit",
     description: "Exit the TUI session",
     type: "builtin",
   },
 ];
+
+/** Parsed builtin invocation: command name plus any trailing argument string. */
+export interface BuiltinInvocation {
+  name: SlashCommand["name"];
+  args: string;
+}
 
 export async function loadAvailableCommands(skillsDirs?: string[]): Promise<SlashCommand[]> {
   const skills = await listSkills(skillsDirs);
@@ -69,12 +80,60 @@ export function getHighlightedCommandName(text: string, commands: SlashCommand[]
   return commands.some((command) => command.name.toLowerCase() === commandName) ? commandToken : null;
 }
 
-export function resolveBuiltinCommand(text: string): SlashCommand["name"] | null {
+export function resolveBuiltinCommand(text: string): BuiltinInvocation | null {
   const trimmed = text.trim();
-  if (!trimmed || /\s/.test(trimmed)) return null;
+  if (!trimmed) return null;
 
-  const normalized = normalizeCommandName(trimmed);
-  return BUILTIN_COMMANDS.find((command) => command.name === normalized)?.name ?? null;
+  const match = trimmed.match(/^\/?([^\s]+)(?:\s+([\s\S]*))?$/);
+  if (!match) return null;
+  const token = match[1];
+  if (!token) return null;
+
+  const normalized = normalizeCommandName(token);
+  const builtin = BUILTIN_COMMANDS.find((command) => command.name === normalized);
+  if (!builtin) return null;
+
+  return { name: builtin.name, args: (match[2] ?? "").trim() };
+}
+
+/**
+ * Renders a help string for slash commands. With no `target`, lists all
+ * commands grouped by type. With a `target`, prints the matched command's
+ * details, or an error message if not found.
+ */
+export function formatHelp(commands: SlashCommand[], target?: string): string {
+  if (target) {
+    const normalized = normalizeCommandName(target);
+    const match = commands.find((c) => c.name.toLowerCase() === normalized);
+    if (!match) {
+      return `Unknown command: \`/${target}\`. Run \`/help\` to see available commands.`;
+    }
+    const kind = match.type === "builtin" ? "Built-in command" : "Skill";
+    return `**/${match.name}** — _${kind}_\n\n${match.description}`;
+  }
+
+  const builtins = commands.filter((c) => c.type === "builtin");
+  const skills = commands.filter((c) => c.type === "skill");
+
+  const lines: string[] = ["**Available slash commands**", ""];
+
+  if (builtins.length > 0) {
+    lines.push("_Built-in_");
+    for (const c of builtins) {
+      lines.push(`- \`/${c.name}\` — ${c.description}`);
+    }
+  }
+
+  if (skills.length > 0) {
+    if (builtins.length > 0) lines.push("");
+    lines.push("_Skills_");
+    for (const c of skills) {
+      lines.push(`- \`/${c.name}\` — ${c.description}`);
+    }
+  }
+
+  lines.push("", "Run `/help <name>` for details on a single command.");
+  return lines.join("\n");
 }
 
 export function buildPromptSubmission(text: string, commands: SlashCommand[]): PromptSubmission {

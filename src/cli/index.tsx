@@ -84,7 +84,7 @@ if (args.length > 0) {
   const commands: SlashCommand[] = await loadAvailableCommands(skillsDirs);
 
   render(
-    <AgentLoopProvider agent={agent}>
+    <AgentLoopProvider agent={agent} commands={commands}>
       <App commands={commands} supportProjectWideAllow />
     </AgentLoopProvider>,
     { patchConsole: false },

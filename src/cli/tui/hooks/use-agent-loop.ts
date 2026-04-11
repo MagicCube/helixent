@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 import type { Agent } from "@/agent";
 import type { AssistantMessage, NonSystemMessage, UserMessage } from "@/foundation";
 
-import type { PromptSubmission } from "../command-registry";
-import { resolveBuiltinCommand } from "../command-registry";
+import type { PromptSubmission, SlashCommand } from "../command-registry";
+import { formatHelp, resolveBuiltinCommand } from "../command-registry";
 
 type AgentLoopState = {
   agent: Agent;
@@ -19,7 +19,15 @@ type AgentLoopState = {
 
 const AgentLoopContext = createContext<AgentLoopState | null>(null);
 
-export function AgentLoopProvider({ agent, children }: { agent: Agent; children: ReactNode }) {
+export function AgentLoopProvider({
+  agent,
+  commands = [],
+  children,
+}: {
+  agent: Agent;
+  commands?: SlashCommand[];
+  children: ReactNode;
+}) {
   const [streaming, setStreaming] = useState(false);
   const [messages, setMessages] = useState<NonSystemMessage[]>([]);
 
@@ -74,20 +82,36 @@ export function AgentLoopProvider({ agent, children }: { agent: Agent; children:
   const onSubmit = useCallback(
     async (submission: PromptSubmission) => {
       const { text, requestedSkillName } = submission;
-      const builtinCommand = resolveBuiltinCommand(text);
+      const invocation = resolveBuiltinCommand(text);
 
-      if (builtinCommand === "exit" || builtinCommand === "quit") {
+      if (invocation?.name === "exit" || invocation?.name === "quit") {
         process.exit(0);
         return;
       }
 
       if (streamingRef.current) return;
 
-      if (builtinCommand === "clear") {
+      if (invocation?.name === "clear") {
         agent.clearMessages();
         flushPendingMessages();
         setMessages([]);
         clearTerminal();
+        return;
+      }
+
+      if (invocation?.name === "help") {
+        flushPendingMessages();
+        const userMessage: UserMessage = { role: "user", content: [{ type: "text", text }] };
+        const helpMessage: AssistantMessage = {
+          role: "assistant",
+          content: [
+            {
+              type: "text",
+              text: formatHelp(commands, invocation.args || undefined),
+            },
+          ],
+        };
+        setMessages((prev) => [...prev, userMessage, helpMessage]);
         return;
       }
 
@@ -116,7 +140,7 @@ export function AgentLoopProvider({ agent, children }: { agent: Agent; children:
         setStreaming(false);
       }
     },
-    [agent, enqueueMessage, flushPendingMessages],
+    [agent, commands, enqueueMessage, flushPendingMessages],
   );
 
   const value = useMemo(
