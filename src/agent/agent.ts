@@ -49,6 +49,7 @@ export class Agent {
   private readonly _context: AgentContext;
   private _streaming = false;
   private _abortController: AbortController | null = null;
+  private _lastProgressText = "";
 
   readonly name?: string;
   readonly model: Model;
@@ -178,6 +179,7 @@ export class Agent {
   }
 
   private async *_think(): AsyncGenerator<AgentEvent, AssistantMessage> {
+    this._lastProgressText = "";
     const modelContext: ModelContext = {
       prompt: this.prompt,
       messages: this.messages,
@@ -209,7 +211,13 @@ export class Agent {
       (c): c is ToolUseContent => c.type === "tool_use",
     );
     if (toolUses.length === 0) {
-      return { type: "progress", subtype: "thinking" };
+      const textParts = snapshot.content
+        .filter((c) => c.type === "text")
+        .map((c) => (c as { text: string }).text);
+      const accumulated = textParts.join("");
+      const delta = accumulated.slice(this._lastProgressText.length);
+      this._lastProgressText = accumulated;
+      return { type: "progress", subtype: "thinking", text: accumulated, delta };
     }
     const last = toolUses[toolUses.length - 1]!;
     return { type: "progress", subtype: "tool", name: last.name, input: last.input };
