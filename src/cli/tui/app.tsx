@@ -11,6 +11,7 @@ import { Header } from "./components/header";
 import { InputBox } from "./components/input-box";
 import { MessageHistoryItem } from "./components/message-history";
 import { StreamingIndicator } from "./components/streaming-indicator";
+import { StreamingMessage } from "./components/streaming-message";
 import { TodoPanel } from "./components/todo-panel";
 import { useAgentLoop } from "./hooks/use-agent-loop";
 import { useApprovalManager } from "./hooks/use-approval-manager";
@@ -29,7 +30,7 @@ export function App({
   commands: SlashCommand[];
   supportProjectWideAllow?: boolean;
 }) {
-  const { streaming, messages, onSubmit, abort } = useAgentLoop();
+  const { streaming, messages, streamingText, printMode, onSubmit, abort } = useAgentLoop();
   const { approvalRequest, respondToApproval } = useApprovalManager();
   const { askUserQuestionRequest, respondWithAnswers } = useAskUserQuestionManager();
   const { latestTodos, todoSnapshots } = useMemo(() => buildTodoViewState(messages), [messages]);
@@ -45,6 +46,11 @@ export function App({
 
   useFlushToScrollback(messages, flushedRef, write);
 
+  // Show streaming text in Ink mode (not print mode)
+  const showStreamingText = streaming && streamingText && !printMode;
+  // Only show the shimmer indicator when there is no streaming text to display
+  const showShimmer = streaming && !streamingText && !approvalRequest && !askUserQuestionRequest;
+
   return (
     <Box flexDirection="column" width="100%">
       {messages.length === 0 && <Header />}
@@ -57,7 +63,8 @@ export function App({
             todoSnapshots={todoSnapshots}
           />
         )}
-        {approvalRequest || askUserQuestionRequest ? null : (
+        {showStreamingText && <StreamingMessage text={streamingText} />}
+        {showShimmer && (
           <StreamingIndicator streaming={streaming} nextTodo={nextTodo} />
         )}
         {!hideTodos && <TodoPanel todos={latestTodos} />}

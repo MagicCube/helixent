@@ -11,6 +11,8 @@ type AgentLoopState = {
   agent: Agent;
   streaming: boolean;
   messages: NonSystemMessage[];
+  streamingText: string;
+  printMode: boolean;
   // eslint-disable-next-line no-unused-vars
   onSubmit: (submission: PromptSubmission) => Promise<void>;
   abort: () => void;
@@ -22,14 +24,17 @@ const AgentLoopContext = createContext<AgentLoopState | null>(null);
 export function AgentLoopProvider({
   agent,
   commands = [],
+  printMode = false,
   children,
 }: {
   agent: Agent;
   commands?: SlashCommand[];
+  printMode?: boolean;
   children: ReactNode;
 }) {
   const [streaming, setStreaming] = useState(false);
   const [messages, setMessages] = useState<NonSystemMessage[]>([]);
+  const [streamingText, setStreamingText] = useState("");
 
   const streamingRef = useRef(streaming);
   const pendingMessagesRef = useRef<NonSystemMessage[]>([]);
@@ -116,6 +121,7 @@ export function AgentLoopProvider({
       }
 
       setStreaming(true);
+      setStreamingText("");
 
       try {
         agent.setRequestedSkillName(requestedSkillName);
@@ -125,11 +131,26 @@ export function AgentLoopProvider({
         const stream = agent.stream(userMessage);
         for await (const event of stream) {
           if (event.type === "message") {
+            // Clear streaming text when a completed message arrives
+            setStreamingText("");
             enqueueMessage(event.message);
+          } else if (event.type === "progress" && event.subtype === "thinking") {
+            if (printMode) {
+              // Print Mode: write delta directly to stdout for instant output
+              if (event.delta) {
+                process.stdout.write(event.delta);
+              }
+            } else {
+              // Ink Mode: update React state for re-rendering
+              setStreamingText(event.text);
+            }
           }
-          // progress events intentionally ignored: the UI shows a generic
-          // "Thinking..." shimmer driven by the `streaming` boolean, and
-          // MessageHistory is the single source of truth for tool calls.
+          // tool progress events are handled by StreamingIndicator
+        }
+
+        if (printMode) {
+          // Ensure a newline after print-mode streaming completes
+          process.stdout.write("\n");
         }
       } catch (error) {
         if (isAbortError(error)) return;
@@ -137,10 +158,11 @@ export function AgentLoopProvider({
       } finally {
         agent.setRequestedSkillName(null);
         flushPendingMessages();
+        setStreamingText("");
         setStreaming(false);
       }
     },
-    [agent, commands, enqueueMessage, flushPendingMessages],
+    [agent, commands, enqueueMessage, flushPendingMessages, printMode],
   );
 
   const value = useMemo(
@@ -148,11 +170,13 @@ export function AgentLoopProvider({
       agent,
       streaming,
       messages,
+      streamingText,
+      printMode,
       onSubmit,
       abort,
       tokenCount,
     }),
-    [abort, agent, messages, onSubmit, streaming, tokenCount],
+    [abort, agent, messages, onSubmit, streaming, streamingText, printMode, tokenCount],
   );
 
   return createElement(AgentLoopContext.Provider, { value }, children);

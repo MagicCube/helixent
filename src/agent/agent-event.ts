@@ -18,10 +18,18 @@ export interface AgentMessageEvent {
 /**
  * Fired while the current model snapshot has only text and/or thinking
  * content — i.e. no `tool_use` entries yet.
+ *
+ * When the model is producing text tokens, `text` carries the accumulated
+ * output so far and `delta` carries the incremental fragment added since the
+ * previous event.
  */
 export interface AgentProgressThinkingEvent {
   type: "progress";
   subtype: "thinking";
+  /** Accumulated text output so far (empty string until the first text token). */
+  text: string;
+  /** Incremental text fragment added since the previous progress event. */
+  delta: string;
 }
 
 /**
