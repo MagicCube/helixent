@@ -30,7 +30,7 @@ export function App({
   commands: SlashCommand[];
   supportProjectWideAllow?: boolean;
 }) {
-  const { streaming, messages, streamingText, printMode, onSubmit, abort } = useAgentLoop();
+  const { streaming, messages, streamingText, onSubmit, abort } = useAgentLoop();
   const { approvalRequest, respondToApproval } = useApprovalManager();
   const { askUserQuestionRequest, respondWithAnswers } = useAskUserQuestionManager();
   const { latestTodos, todoSnapshots } = useMemo(() => buildTodoViewState(messages), [messages]);
@@ -47,7 +47,7 @@ export function App({
   useFlushToScrollback(messages, flushedRef, write);
 
   // Show streaming text in Ink mode (not print mode)
-  const showStreamingText = streaming && streamingText && !printMode;
+  const showStreamingText = streaming && !!streamingText;
   // Only show the shimmer indicator when there is no streaming text to display
   const showShimmer = streaming && !streamingText && !approvalRequest && !askUserQuestionRequest;
 

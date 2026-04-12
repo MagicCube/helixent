@@ -1,7 +1,7 @@
 import { Box, Text } from "ink";
-import { memo, useMemo } from "react";
 import { marked } from "marked";
 import TerminalRenderer from "marked-terminal";
+import { memo, useMemo } from "react";
 
 import { currentTheme } from "../themes";
 

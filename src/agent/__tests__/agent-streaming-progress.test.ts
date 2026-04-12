@@ -1,13 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import { z } from "zod";
+
+import type { AssistantMessage } from "@/foundation";
+import { Model } from "@/foundation/models/model";
+import type { ModelProvider, ModelProviderInvokeParams } from "@/foundation/models/model-provider";
+
 import { Agent } from "../agent";
 import type { AgentProgressThinkingEvent } from "../agent-event";
-import { Model } from "@/foundation/models/model";
-import type {
-  ModelProvider,
-  ModelProviderInvokeParams,
-} from "@/foundation/models/model-provider";
-import type { AssistantMessage } from "@/foundation";
-import { z } from "zod";
 
 function createTextStreamingProvider(): ModelProvider {
   const finalMessage: AssistantMessage = {
@@ -16,7 +15,9 @@ function createTextStreamingProvider(): ModelProvider {
   };
 
   return {
+    // eslint-disable-next-line no-unused-vars
     invoke: async (_params: ModelProviderInvokeParams) => finalMessage,
+    // eslint-disable-next-line no-unused-vars
     async *stream(_params: ModelProviderInvokeParams) {
       const snapshots: AssistantMessage[] = [
         {
@@ -63,7 +64,9 @@ function createToolStreamingProvider(): ModelProvider {
   };
 
   return {
+    // eslint-disable-next-line no-unused-vars
     invoke: async (_params: ModelProviderInvokeParams) => toolMessage,
+    // eslint-disable-next-line no-unused-vars
     async *stream(_params: ModelProviderInvokeParams) {
       callCount++;
       if (callCount === 1) {
@@ -82,7 +85,6 @@ function createToolStreamingProvider(): ModelProvider {
         };
         yield toolMessage;
       } else {
-        // Second call: return a text-only message to end the loop
         yield doneMessage;
       }
     },
@@ -95,28 +97,26 @@ describe("Agent streaming progress events", () => {
     const model = new Model("test-model", provider);
     const agent = new Agent({ model, prompt: "You are a test assistant.", tools: [] });
 
-    const events: any[] = [];
+    const events: AgentProgressThinkingEvent[] = [];
     for await (const event of agent.stream({
       role: "user",
       content: [{ type: "text", text: "Hi" }],
     })) {
-      events.push(event);
+      if (event.type === "progress" && event.subtype === "thinking") {
+        events.push(event);
+      }
     }
 
-    const thinkingEvents = events.filter(
-      (e) => e.type === "progress" && e.subtype === "thinking",
-    ) as AgentProgressThinkingEvent[];
+    expect(events.length).toBe(2);
 
-    expect(thinkingEvents.length).toBe(2);
-
-    expect(thinkingEvents[0]).toMatchObject({
+    expect(events[0]).toMatchObject({
       type: "progress",
       subtype: "thinking",
       text: "Hello",
       delta: "Hello",
     });
 
-    expect(thinkingEvents[1]).toMatchObject({
+    expect(events[1]).toMatchObject({
       type: "progress",
       subtype: "thinking",
       text: "Hello, world",
@@ -129,23 +129,24 @@ describe("Agent streaming progress events", () => {
     const model = new Model("test-model", provider);
     const agent = new Agent({ model, prompt: "You are a test assistant.", tools: [] });
 
-    const events: any[] = [];
+    let finalMessage: AssistantMessage | null = null;
     for await (const event of agent.stream({
       role: "user",
       content: [{ type: "text", text: "Hi" }],
     })) {
-      events.push(event);
+      if (event.type === "message" && event.message.role === "assistant") {
+        finalMessage = event.message as AssistantMessage;
+      }
     }
 
-    const messageEvent = events.find((e) => e.type === "message");
-    expect(messageEvent).toBeDefined();
-    expect(messageEvent.message.role).toBe("assistant");
+    expect(finalMessage).toBeDefined();
+    expect(finalMessage!.role).toBe("assistant");
 
-    const textBlock = messageEvent.message.content.find(
-      (block: any) => block.type === "text",
+    const textBlock = finalMessage!.content.find(
+      (block) => block.type === "text",
     );
     expect(textBlock).toBeDefined();
-    expect(textBlock.text).toBe("Hello, world!");
+    expect((textBlock as { text: string }).text).toBe("Hello, world!");
   });
 
   test("yields tool progress events without text fields", async () => {
@@ -161,17 +162,15 @@ describe("Agent streaming progress events", () => {
 
     const agent = new Agent({ model, prompt: "You are a test assistant.", tools: [bashTool] });
 
-    const events: any[] = [];
+    const toolProgressEvents: { name?: string; text?: string; delta?: string }[] = [];
     for await (const event of agent.stream({
       role: "user",
       content: [{ type: "text", text: "Hi" }],
     })) {
-      events.push(event);
+      if (event.type === "progress" && event.subtype === "tool") {
+        toolProgressEvents.push(event as unknown as { name?: string; text?: string; delta?: string });
+      }
     }
-
-    const toolProgressEvents = events.filter(
-      (e) => e.type === "progress" && e.subtype === "tool",
-    );
 
     expect(toolProgressEvents.length).toBeGreaterThanOrEqual(1);
 
