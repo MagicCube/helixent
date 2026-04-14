@@ -1,5 +1,4 @@
-import { summarizeToolResultText } from "@/agent/tool-result-summary";
-import type { AssistantMessage, NonSystemMessage, ToolMessage, ToolUseContent, UserMessage } from "@/foundation";
+import type { AssistantMessage, NonSystemMessage, ToolUseContent, UserMessage } from "@/foundation";
 
 const ESC = "\x1b[";
 const RESET = `${ESC}0m`;
@@ -74,15 +73,4 @@ function toolUseText(content: ToolUseContent): string {
     default:
       return `${dim("⏺")} Tool call\n  ${dim(`└─ ${content.name}`)}`;
   }
-}
-
-function toolMessageText(message: ToolMessage): string | null {
-  const parts: string[] = [];
-  for (const content of message.content) {
-    const summary = summarizeToolResultText(content.content);
-    if (summary) {
-      parts.push(`${dim("✓")} ${dim(summary)}`);
-    }
-  }
-  return parts.length > 0 ? parts.join("\n") : null;
 }

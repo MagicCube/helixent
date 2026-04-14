@@ -1,7 +1,6 @@
+import type { ToolRecoveryHint } from "./tool-recovery-policy";
 import type { ToolTraceRecord, ToolTraceState } from "./tool-trace";
 import { summarizeRecentToolTrace } from "./tool-trace";
-
-import type { ToolRecoveryHint } from "./tool-recovery-policy";
 
 function formatFailureLine(record: ToolTraceRecord, recoveryHint?: ToolRecoveryHint | null) {
   const parts = [
@@ -47,7 +46,7 @@ function dedupeFailureRecords(records: ToolTraceRecord[]) {
 
 export function buildRecentToolObservation(params: {
   state: ToolTraceState;
-  getRecoveryHint: (record: ToolTraceRecord) => ToolRecoveryHint | null;
+  getRecoveryHint: (_record: ToolTraceRecord) => ToolRecoveryHint | null;
   maxFailures?: number;
 }) {
   const { state, getRecoveryHint, maxFailures = 3 } = params;

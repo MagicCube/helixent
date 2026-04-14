@@ -95,8 +95,8 @@ describe("Agent tool observation injection", () => {
       maxSteps: 5,
     });
 
-    for await (const _event of agent.stream({ role: "user", content: [{ type: "text", text: "find foo" }] })) {
-      // fully drain the stream so every model call is recorded
+    for await (const _ of agent.stream({ role: "user", content: [{ type: "text", text: "find foo" }] })) {
+      void _;
     }
 
     expect(provider.calls).toHaveLength(3);
@@ -139,8 +139,8 @@ describe("Agent tool observation injection", () => {
       maxSteps: 2,
     });
 
-    for await (const _event of agent.stream({ role: "user", content: [{ type: "text", text: "hello" }] })) {
-      // fully drain the stream so the model call is recorded
+    for await (const _ of agent.stream({ role: "user", content: [{ type: "text", text: "hello" }] })) {
+      void _;
     }
 
     expect(provider.calls).toHaveLength(1);
