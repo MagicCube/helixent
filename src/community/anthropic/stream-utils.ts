@@ -1,6 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 
-import type { AssistantMessage, AssistantMessageContent, TokenUsage } from "@/foundation";
+import { createAssistantMessageWithContent, createTextContent, createThinkingContent, createToolUseContent, type AssistantMessage, type AssistantMessageContent, type TokenUsage } from "@/foundation";
 
 /**
  * Accumulated state for a single content block while streaming.
@@ -59,12 +59,10 @@ export class StreamAccumulator {
       if (item) content.push(item);
     }
 
-    return {
-      role: "assistant",
-      content,
+    return createAssistantMessageWithContent(content, {
       usage: this.hasFinalUsage ? this._buildUsage() : undefined,
-      ...(this.hasFinalUsage ? {} : { streaming: true }),
-    };
+      streaming: !this.hasFinalUsage,
+    });
   }
 
   private _handleBlockStart(event: Anthropic.RawContentBlockStartEvent): void {
@@ -129,21 +127,16 @@ export class StreamAccumulator {
  */
 function blockToContent(block: BlockState): AssistantMessageContent[number] | null {
   if (block.type === "text") {
-    return block.text ? { type: "text", text: block.text } : null;
+    return block.text ? createTextContent(block.text) : null;
   }
   if (block.type === "thinking") {
-    const thinkingContent: Record<string, unknown> = {
-      type: "thinking",
-      thinking: block.thinking,
-    };
-    if (block.signature) {
-      // Preserve the signature so it can be sent back in multi-turn conversations.
-      thinkingContent._anthropicSignature = block.signature;
-    }
-    return thinkingContent as { type: "thinking"; thinking: string };
+    return createThinkingContent(
+      block.thinking,
+      block.signature ? { _anthropicSignature: block.signature } : undefined,
+    );
   }
   // tool_use
-  return { type: "tool_use", id: block.id, name: block.name, input: parseToolInput(block.partialJson) };
+  return createToolUseContent(block.id, block.name, parseToolInput(block.partialJson));
 }
 
 function parseToolInput(partialJson: string): Record<string, unknown> {

@@ -35,6 +35,8 @@ export interface ThinkingContent {
   type: "thinking";
   /** Opaque reasoning or chain-of-thought string from the model. */
   thinking: string;
+  /** Provider-specific metadata (e.g. Anthropic signature for multi-turn). */
+  providerData?: Record<string, unknown>;
 }
 
 /**

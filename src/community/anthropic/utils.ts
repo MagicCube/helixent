@@ -1,6 +1,52 @@
 import type Anthropic from "@anthropic-ai/sdk";
 
-import type { AssistantMessage, Message, TokenUsage, Tool } from "@/foundation";
+import {
+  createAssistantMessageWithContent,
+  createTextContent,
+  createThinkingContent,
+  createToolUseContent,
+  type AssistantMessage,
+  type AssistantMessageContent,
+  type Message,
+  type TokenUsage,
+  type Tool,
+} from "@/foundation";
+
+// ============================================================================
+// Anthropic SDK Content Part Helpers
+// ============================================================================
+
+function anthropicTextBlock(text: string): Anthropic.TextBlockParam {
+  return { type: "text", text };
+}
+
+function anthropicImageBlock(url: string): Anthropic.ImageBlockParam {
+  return { type: "image", source: { type: "url", url } };
+}
+
+function anthropicThinkingBlock(thinking: string, signature?: string): Anthropic.ThinkingBlockParam {
+  return { type: "thinking", thinking, signature: signature ?? "" };
+}
+
+function anthropicToolUseBlock(id: string, name: string, input: Record<string, unknown>): Anthropic.ToolUseBlockParam {
+  return { type: "tool_use", id, name, input };
+}
+
+function anthropicToolResultBlock(toolUseId: string, content: string): Anthropic.ToolResultBlockParam {
+  return { type: "tool_result", tool_use_id: toolUseId, content };
+}
+
+function anthropicUserMessage(content: Anthropic.ContentBlockParam[]): Anthropic.MessageParam {
+  return { role: "user", content };
+}
+
+function anthropicAssistantMessage(content: Anthropic.ContentBlockParam[]): Anthropic.MessageParam {
+  return { role: "assistant", content };
+}
+
+// ============================================================================
+// Conversion Functions
+// ============================================================================
 
 /**
  * Extracts the system prompt from helixent messages.
@@ -42,58 +88,33 @@ export function convertToAnthropicMessages(
       const content: Anthropic.ContentBlockParam[] = [];
       for (const part of message.content) {
         if (part.type === "text") {
-          content.push({ type: "text", text: part.text });
+          content.push(anthropicTextBlock(part.text));
         } else if (part.type === "image_url") {
-          // Anthropic uses base64 or URL-based image sources.
-          // For URL-based images, we use the url type.
-          content.push({
-            type: "image",
-            source: {
-              type: "url",
-              url: part.image_url.url,
-            },
-          });
+          content.push(anthropicImageBlock(part.image_url.url));
         }
       }
-      result.push({ role: "user", content });
+      result.push(anthropicUserMessage(content));
     } else if (message.role === "assistant") {
       const content: Anthropic.ContentBlockParam[] = [];
       for (const part of message.content) {
         if (part.type === "text") {
-          content.push({ type: "text", text: part.text });
+          content.push(anthropicTextBlock(part.text));
         } else if (part.type === "thinking") {
-          // Retrieve the preserved signature if available (set during parseAssistantMessage).
-          // Anthropic requires a valid signature for thinking blocks in multi-turn conversations.
-          const signature =
-            (part as unknown as Record<string, unknown>)._anthropicSignature as string | undefined;
-          content.push({
-            type: "thinking",
-            thinking: part.thinking,
-            signature: signature ?? "",
-          });
+          const signature = part.providerData?._anthropicSignature as string | undefined;
+          content.push(anthropicThinkingBlock(part.thinking, signature));
         } else if (part.type === "tool_use") {
-          content.push({
-            type: "tool_use",
-            id: part.id,
-            name: part.name,
-            input: part.input,
-          });
+          content.push(anthropicToolUseBlock(part.id, part.name, part.input));
         }
       }
-      result.push({ role: "assistant", content });
+      result.push(anthropicAssistantMessage(content));
     } else if (message.role === "tool") {
-      // Anthropic expects tool results as user messages with tool_result content blocks.
       const content: Anthropic.ToolResultBlockParam[] = [];
       for (const part of message.content) {
         if (part.type === "tool_result") {
-          content.push({
-            type: "tool_result",
-            tool_use_id: part.tool_use_id,
-            content: part.content,
-          });
+          content.push(anthropicToolResultBlock(part.tool_use_id, part.content));
         }
       }
-      result.push({ role: "user", content });
+      result.push(anthropicUserMessage(content));
     }
   }
 
@@ -110,37 +131,24 @@ export function parseAssistantMessage(
   response: Anthropic.Message,
   usage?: TokenUsage,
 ): AssistantMessage {
-  const result: AssistantMessage = {
-    role: "assistant",
-    content: [],
-    usage,
-  };
+  const content: AssistantMessageContent = [];
 
   for (const block of response.content) {
     if (block.type === "text") {
-      result.content.push({ type: "text", text: block.text });
+      content.push(createTextContent(block.text));
     } else if (block.type === "thinking") {
-      // Preserve the signature so it can be sent back in multi-turn conversations.
-      // The signature is stored as an extra runtime property on the content object.
-      const thinkingContent: Record<string, unknown> = {
-        type: "thinking",
-        thinking: block.thinking,
-      };
-      if (block.signature) {
-        thinkingContent._anthropicSignature = block.signature;
-      }
-      result.content.push(thinkingContent as { type: "thinking"; thinking: string });
+      content.push(
+        createThinkingContent(
+          block.thinking,
+          block.signature ? { _anthropicSignature: block.signature } : undefined,
+        ),
+      );
     } else if (block.type === "tool_use") {
-      result.content.push({
-        type: "tool_use",
-        id: block.id,
-        name: block.name,
-        input: block.input as Record<string, unknown>,
-      });
+      content.push(createToolUseContent(block.id, block.name, block.input as Record<string, unknown>));
     }
   }
 
-  return result;
+  return createAssistantMessageWithContent(content, { usage });
 }
 
 /**

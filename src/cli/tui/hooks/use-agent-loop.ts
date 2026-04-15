@@ -2,7 +2,7 @@ import { createContext, createElement, useCallback, useContext, useEffect, useMe
 import type { ReactNode } from "react";
 
 import type { Agent } from "@/agent";
-import type { AssistantMessage, NonSystemMessage, UserMessage } from "@/foundation";
+import { createAssistantMessage, createUserMessage, type AssistantMessage, type NonSystemMessage, type UserMessage } from "@/foundation";
 
 import type { PromptSubmission, SlashCommand } from "../command-registry";
 import { formatHelp, resolveBuiltinCommand } from "../command-registry";
@@ -101,16 +101,8 @@ export function AgentLoopProvider({
 
       if (invocation?.name === "help") {
         flushPendingMessages();
-        const userMessage: UserMessage = { role: "user", content: [{ type: "text", text }] };
-        const helpMessage: AssistantMessage = {
-          role: "assistant",
-          content: [
-            {
-              type: "text",
-              text: formatHelp(commands, invocation.args || undefined),
-            },
-          ],
-        };
+        const userMessage: UserMessage = createUserMessage(text);
+        const helpMessage: AssistantMessage = createAssistantMessage(formatHelp(commands, invocation.args || undefined));
         setMessages((prev) => [...prev, userMessage, helpMessage]);
         return;
       }
@@ -119,7 +111,7 @@ export function AgentLoopProvider({
 
       try {
         agent.setRequestedSkillName(requestedSkillName);
-        const userMessage: UserMessage = { role: "user", content: [{ type: "text", text }] };
+        const userMessage: UserMessage = createUserMessage(text);
         setMessages((prev) => [...prev, userMessage]);
 
         const stream = agent.stream(userMessage);
