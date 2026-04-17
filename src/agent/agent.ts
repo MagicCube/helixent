@@ -249,25 +249,52 @@ export class Agent {
       : null;
 
     const remaining = new Set(pending.map((_, i) => i));
-    while (remaining.size > 0) {
-      const candidates = [...remaining].map((i) => pending[i]);
-      const resolved = (await (abortPromise
-        ? Promise.race([...candidates, abortPromise])
-        : Promise.race(candidates)))!;
-      remaining.delete(resolved.index);
+    try {
+      while (remaining.size > 0) {
+        const candidates = [...remaining].map((i) => pending[i]);
+        const resolved = (await (abortPromise
+          ? Promise.race([...candidates, abortPromise])
+          : Promise.race(candidates)))!;
+        remaining.delete(resolved.index);
 
-      const toolMessage: ToolMessage = {
-        role: "tool",
-        content: [
-          {
-            type: "tool_result",
-            tool_use_id: resolved.toolUseId,
-            content: formatToolResultForMessage({ toolName: resolved.toolName, result: resolved.result }),
-          },
-        ],
-      };
-      this._appendMessage(toolMessage);
-      yield { type: "message", message: toolMessage };
+        const toolMessage: ToolMessage = {
+          role: "tool",
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: resolved.toolUseId,
+              content: formatToolResultForMessage({ toolName: resolved.toolName, result: resolved.result }),
+            },
+          ],
+        };
+        this._appendMessage(toolMessage);
+        yield { type: "message", message: toolMessage };
+      }
+    } catch (error) {
+      // Abort (or any throw) left one or more tool_use blocks without a
+      // tool_result. Both Anthropic and OpenAI reject replays with orphan
+      // tool_use, so synthesize a result for every outstanding entry before
+      // re-throwing — this keeps the in-memory transcript (and anything
+      // persisted from it) replay-safe.
+      for (const index of remaining) {
+        const toolUse = toolUses[index]!;
+        const toolMessage: ToolMessage = {
+          role: "tool",
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: toolUse.id,
+              content: formatToolResultForMessage({
+                toolName: toolUse.name,
+                result: "Error: tool execution aborted before completion.",
+              }),
+            },
+          ],
+        };
+        this._appendMessage(toolMessage);
+        yield { type: "message", message: toolMessage };
+      }
+      throw error;
     }
   }
 
