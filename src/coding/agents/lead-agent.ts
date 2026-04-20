@@ -35,6 +35,7 @@ export async function createCodingAgent({
   askUser,
   askUserQuestion,
   approvalPersistence,
+  resumeMessages,
 }: {
   model: Model;
   cwd?: string;
@@ -44,6 +45,8 @@ export async function createCodingAgent({
   // eslint-disable-next-line no-unused-vars
   askUserQuestion?: (params: AskUserQuestionParameters) => Promise<AskUserQuestionResult>;
   approvalPersistence?: ApprovalPersistence;
+  /** Prior conversation messages to restore when resuming a saved session. */
+  resumeMessages?: NonSystemMessage[];
 }) {
   const agentsFile = Bun.file(`${cwd}/AGENTS.md`);
   const messages: NonSystemMessage[] = [];
@@ -58,6 +61,9 @@ export async function createCodingAgent({
         },
       ],
     });
+  }
+  if (resumeMessages?.length) {
+    messages.push(...resumeMessages);
   }
   const { tool: todoTool, middleware: todoMiddleware } = createTodoSystem();
 

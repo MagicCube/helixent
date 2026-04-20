@@ -2,6 +2,7 @@ import { createContext, createElement, useCallback, useContext, useEffect, useMe
 import type { ReactNode } from "react";
 
 import type { Agent } from "@/agent";
+import { generateSessionId, saveSession } from "@/cli/sessions";
 import type { AssistantMessage, NonSystemMessage, UserMessage } from "@/foundation";
 
 import type { PromptSubmission, SlashCommand } from "../command-registry";
@@ -11,6 +12,7 @@ type AgentLoopState = {
   agent: Agent;
   streaming: boolean;
   messages: NonSystemMessage[];
+  sessionId: string;
   // eslint-disable-next-line no-unused-vars
   onSubmit: (submission: PromptSubmission) => Promise<void>;
   abort: () => void;
@@ -22,14 +24,26 @@ const AgentLoopContext = createContext<AgentLoopState | null>(null);
 export function AgentLoopProvider({
   agent,
   commands = [],
+  sessionId: initialSessionId,
+  sessionCreatedAt: initialSessionCreatedAt,
+  initialMessages = [],
   children,
 }: {
   agent: Agent;
   commands?: SlashCommand[];
+  /** Session ID to persist the conversation under. A new one is generated if omitted. */
+  sessionId?: string;
+  /** Original createdAt of the session; preserved across saves when resuming. */
+  sessionCreatedAt?: string;
+  /** Pre-populated messages when resuming a saved session. */
+  initialMessages?: NonSystemMessage[];
   children: ReactNode;
 }) {
   const [streaming, setStreaming] = useState(false);
-  const [messages, setMessages] = useState<NonSystemMessage[]>([]);
+  const [messages, setMessages] = useState<NonSystemMessage[]>(initialMessages);
+  const sessionIdRef = useRef(initialSessionId ?? generateSessionId());
+  const sessionCreatedAtRef = useRef(initialSessionCreatedAt ?? new Date().toISOString());
+  const messagesRef = useRef<NonSystemMessage[]>(initialMessages);
 
   const streamingRef = useRef(streaming);
   const pendingMessagesRef = useRef<NonSystemMessage[]>([]);
@@ -48,7 +62,11 @@ export function AgentLoopProvider({
 
     const pending = pendingMessagesRef.current;
     pendingMessagesRef.current = [];
-    setMessages((prev) => [...prev, ...pending]);
+    setMessages((prev) => {
+      const next = [...prev, ...pending];
+      messagesRef.current = next;
+      return next;
+    });
   }, []);
 
   const enqueueMessage = useCallback(
@@ -94,6 +112,7 @@ export function AgentLoopProvider({
       if (invocation?.name === "clear") {
         agent.clearMessages();
         flushPendingMessages();
+        messagesRef.current = [];
         setMessages([]);
         clearTerminal();
         return;
@@ -120,7 +139,11 @@ export function AgentLoopProvider({
       try {
         agent.setRequestedSkillName(requestedSkillName);
         const userMessage: UserMessage = { role: "user", content: [{ type: "text", text }] };
-        setMessages((prev) => [...prev, userMessage]);
+        setMessages((prev) => {
+          const next = [...prev, userMessage];
+          messagesRef.current = next;
+          return next;
+        });
 
         const stream = agent.stream(userMessage);
         for await (const event of stream) {
@@ -138,6 +161,17 @@ export function AgentLoopProvider({
         agent.setRequestedSkillName(null);
         flushPendingMessages();
         setStreaming(false);
+        try {
+          saveSession({
+            id: sessionIdRef.current,
+            createdAt: sessionCreatedAtRef.current,
+            updatedAt: new Date().toISOString(),
+            cwd: process.cwd(),
+            messages: messagesRef.current,
+          });
+        } catch {
+          // session save is best-effort; never crash the TUI
+        }
       }
     },
     [agent, commands, enqueueMessage, flushPendingMessages],
@@ -148,6 +182,7 @@ export function AgentLoopProvider({
       agent,
       streaming,
       messages,
+      sessionId: sessionIdRef.current,
       onSubmit,
       abort,
       tokenCount,
