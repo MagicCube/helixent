@@ -127,7 +127,7 @@ export interface AgentMiddleware {
    * @returns Optional context updates to merge into `context`, or a skip instruction to bypass tool execution.
    */
   beforeToolUse?: (params: {
-    agentContext: { messages: any[]; tools: any[] };
+    agentContext: AgentContext;
     toolUse: ToolUseContent<Record<string, unknown>>;
   }) => Promise<BeforeToolUseResult>;
   /**

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import type { AgentContext } from "@/agent";
 import type { ToolUseContent } from "@/foundation";
 
 import type { ApprovalDecision } from "../approval-types";
@@ -9,7 +10,7 @@ function makeToolUse(name: string): ToolUseContent {
   return { type: "tool_use", id: "tc_1", name, input: {} };
 }
 
-const mockAgentContext = { prompt: "", messages: [], tools: [] } as never;
+const mockAgentContext: AgentContext = { prompt: "", messages: [], tools: [] };
 
 describe("createCodingApprovalMiddleware", () => {
   test("allows tools not in the requiresApproval list", async () => {
