@@ -117,7 +117,7 @@ describe("parseAssistantMessage", () => {
     const result = parseAssistantMessage({
       role: "assistant",
       content: "Hello!",
-    });
+    } as never);
     expect(result).toMatchObject({
       role: "assistant",
       content: [{ type: "text", text: "Hello!" }],
@@ -129,7 +129,7 @@ describe("parseAssistantMessage", () => {
       role: "assistant",
       content: "The answer",
       reasoning_content: "Let me reason...",
-    });
+    } as never);
     expect(result.content).toHaveLength(2);
     expect(result.content[0]).toMatchObject({ type: "thinking", thinking: "Let me reason..." });
     expect(result.content[1]).toMatchObject({ type: "text", text: "The answer" });
@@ -146,7 +146,7 @@ describe("parseAssistantMessage", () => {
           function: { name: "bash", arguments: '{"command":"ls"}' },
         },
       ],
-    });
+    } as never);
     expect(result.content).toHaveLength(1);
     expect(result.content[0]).toMatchObject({
       type: "tool_use",
@@ -158,7 +158,7 @@ describe("parseAssistantMessage", () => {
 
   test("includes usage when provided", () => {
     const result = parseAssistantMessage(
-      { role: "assistant", content: "Hi" },
+      { role: "assistant", content: "Hi" } as never,
       { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
     );
     expect(result.usage).toEqual({ promptTokens: 10, completionTokens: 5, totalTokens: 15 });
@@ -168,7 +168,7 @@ describe("parseAssistantMessage", () => {
     const result = parseAssistantMessage({
       role: "assistant",
       content: "",
-    });
+    } as never);
     expect(result.content).toHaveLength(1);
     expect(result.content[0]).toMatchObject({ type: "text", text: "" });
   });

@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 
 import { createTodoSystem } from "../todos/todos";
 
+const mockContext = { prompt: "", messages: [], tools: [] } as never;
+
 describe("createTodoSystem", () => {
   describe("tool invocation", () => {
     test("replaces list when merge is false", async () => {
@@ -82,11 +84,9 @@ describe("createTodoSystem", () => {
       const { middleware } = createTodoSystem();
       const result = await middleware.beforeModel?.({
         modelContext: { prompt: "hello", messages: [] },
-        agentContext: { prompt: "", messages: [], tools: [] },
+        agentContext: mockContext,
       });
       expect(result).toBeUndefined();
     });
-
-
   });
 });

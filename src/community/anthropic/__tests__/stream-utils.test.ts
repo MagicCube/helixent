@@ -9,12 +9,12 @@ describe("StreamAccumulator (Anthropic)", () => {
       type: "content_block_start",
       index: 0,
       content_block: { type: "text", text: "Hello" },
-    });
+    } as never);
     acc.push({
       type: "content_block_delta",
       index: 0,
       delta: { type: "text_delta", text: " world" },
-    });
+    } as never);
 
     const snapshot = acc.snapshot();
     expect(snapshot.content).toHaveLength(1);
@@ -28,16 +28,16 @@ describe("StreamAccumulator (Anthropic)", () => {
       type: "content_block_start",
       index: 0,
       content_block: { type: "thinking", thinking: "Let me " },
-    });
+    } as never);
     acc.push({
       type: "content_block_delta",
       index: 0,
       delta: { type: "thinking_delta", thinking: "think..." },
-    });
+    } as never);
 
     const snapshot = acc.snapshot();
     expect(snapshot.content).toHaveLength(1);
-    const thinking = snapshot.content[0] as Record<string, unknown>;
+    const thinking = snapshot.content[0] as unknown as { type: string; thinking: string; _anthropicSignature?: string };
     expect(thinking.type).toBe("thinking");
     expect(thinking.thinking).toBe("Let me think...");
   });
@@ -48,15 +48,15 @@ describe("StreamAccumulator (Anthropic)", () => {
       type: "content_block_start",
       index: 0,
       content_block: { type: "thinking", thinking: "hmm", signature: "sig_abc" },
-    });
+    } as never);
     acc.push({
       type: "content_block_delta",
       index: 0,
       delta: { type: "signature_delta", signature: "sig_updated" },
-    });
+    } as never);
 
     const snapshot = acc.snapshot();
-    const thinking = snapshot.content[0] as Record<string, unknown>;
+    const thinking = snapshot.content[0] as unknown as { type: string; thinking: string; _anthropicSignature?: string };
     expect(thinking._anthropicSignature).toBe("sig_updated");
   });
 
@@ -66,17 +66,17 @@ describe("StreamAccumulator (Anthropic)", () => {
       type: "content_block_start",
       index: 0,
       content_block: { type: "tool_use", id: "tu_1", name: "bash" },
-    });
+    } as never);
     acc.push({
       type: "content_block_delta",
       index: 0,
       delta: { type: "input_json_delta", partial_json: '{"command"' },
-    });
+    } as never);
     acc.push({
       type: "content_block_delta",
       index: 0,
       delta: { type: "input_json_delta", partial_json: ':"ls"}' },
-    });
+    } as never);
 
     const snapshot = acc.snapshot();
     expect(snapshot.content).toHaveLength(1);
@@ -94,12 +94,12 @@ describe("StreamAccumulator (Anthropic)", () => {
       type: "content_block_start",
       index: 0,
       content_block: { type: "tool_use", id: "tu_1", name: "bash" },
-    });
+    } as never);
     acc.push({
       type: "content_block_delta",
       index: 0,
       delta: { type: "input_json_delta", partial_json: '{"command"' },
-    });
+    } as never);
 
     const snapshot = acc.snapshot();
     expect(snapshot.content).toHaveLength(1);
@@ -123,12 +123,12 @@ describe("StreamAccumulator (Anthropic)", () => {
         model: "claude-3",
         usage: { input_tokens: 20, output_tokens: 0 },
       },
-    });
+    } as never);
     acc.push({
       type: "message_delta",
       delta: { stop_reason: "end_turn" },
       usage: { output_tokens: 10 },
-    });
+    } as never);
 
     const snapshot = acc.snapshot();
     expect(snapshot.usage).toEqual({ promptTokens: 20, completionTokens: 10, totalTokens: 30 });
@@ -141,22 +141,22 @@ describe("StreamAccumulator (Anthropic)", () => {
       type: "content_block_start",
       index: 0,
       content_block: { type: "thinking", thinking: "hmm" },
-    });
+    } as never);
     acc.push({
       type: "content_block_start",
       index: 1,
       content_block: { type: "text", text: "Answer" },
-    });
+    } as never);
     acc.push({
       type: "content_block_start",
       index: 2,
       content_block: { type: "tool_use", id: "tu_1", name: "bash" },
-    });
+    } as never);
     acc.push({
       type: "content_block_delta",
       index: 2,
       delta: { type: "input_json_delta", partial_json: '{"cmd":"x"}' },
-    });
+    } as never);
 
     const snapshot = acc.snapshot();
     expect(snapshot.content).toHaveLength(3);
@@ -185,7 +185,7 @@ describe("StreamAccumulator (Anthropic)", () => {
       type: "content_block_start",
       index: 0,
       content_block: { type: "text", text: "" },
-    });
+    } as never);
 
     const snapshot = acc.snapshot();
     // Empty text blocks are filtered out

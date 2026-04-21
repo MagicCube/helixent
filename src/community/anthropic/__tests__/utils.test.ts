@@ -136,7 +136,7 @@ describe("parseAssistantMessage (Anthropic)", () => {
       model: "claude-3",
       stop_reason: "end_turn",
       usage: { input_tokens: 10, output_tokens: 5 },
-    });
+    } as never);
     expect(result.content).toHaveLength(1);
     expect(result.content[0]).toMatchObject({ type: "text", text: "Hello!" });
   });
@@ -150,9 +150,9 @@ describe("parseAssistantMessage (Anthropic)", () => {
       model: "claude-3",
       stop_reason: "end_turn",
       usage: { input_tokens: 10, output_tokens: 5 },
-    });
+    } as never);
     expect(result.content).toHaveLength(1);
-    const thinking = result.content[0] as Record<string, unknown>;
+    const thinking = result.content[0] as unknown as { type: string; thinking: string; _anthropicSignature?: string };
     expect(thinking.type).toBe("thinking");
     expect(thinking.thinking).toBe("hmm");
     expect(thinking._anthropicSignature).toBe("sig_123");
@@ -167,7 +167,7 @@ describe("parseAssistantMessage (Anthropic)", () => {
       model: "claude-3",
       stop_reason: "tool_use",
       usage: { input_tokens: 10, output_tokens: 5 },
-    });
+    } as never);
     expect(result.content).toHaveLength(1);
     expect(result.content[0]).toMatchObject({
       type: "tool_use",
@@ -187,7 +187,7 @@ describe("parseAssistantMessage (Anthropic)", () => {
         model: "claude-3",
         stop_reason: "end_turn",
         usage: { input_tokens: 20, output_tokens: 10 },
-      },
+      } as never,
       { promptTokens: 20, completionTokens: 10, totalTokens: 30 },
     );
     expect(result.usage).toEqual({ promptTokens: 20, completionTokens: 10, totalTokens: 30 });

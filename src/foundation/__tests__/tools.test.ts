@@ -24,7 +24,7 @@ describe("defineTool", () => {
       invoke: async (input) => JSON.stringify(input),
     });
 
-    const result = await tool.invoke({ message: "hello" });
+    const result = await tool.invoke({ message: "hello" } as never);
     expect(result).toBe('{"message":"hello"}');
   });
 
@@ -42,7 +42,7 @@ describe("defineTool", () => {
       },
     });
 
-    await expect(tool.invoke({}, ac.signal)).rejects.toThrow("Aborted");
+    await expect(tool.invoke({} as never, ac.signal)).rejects.toThrow("Aborted");
   });
 });
 

@@ -9,6 +9,8 @@ function makeToolUse(name: string): ToolUseContent {
   return { type: "tool_use", id: "tc_1", name, input: {} };
 }
 
+const mockAgentContext = { prompt: "", messages: [], tools: [] } as never;
+
 describe("createCodingApprovalMiddleware", () => {
   test("allows tools not in the requiresApproval list", async () => {
     const middleware = createCodingApprovalMiddleware({
@@ -18,7 +20,7 @@ describe("createCodingApprovalMiddleware", () => {
     });
 
     const result = await middleware.beforeToolUse?.({
-      agentContext: { prompt: "", messages: [], tools: [] },
+      agentContext: mockAgentContext,
       toolUse: makeToolUse("read_file"),
     });
 
@@ -37,7 +39,7 @@ describe("createCodingApprovalMiddleware", () => {
     });
 
     const result = await middleware.beforeToolUse?.({
-      agentContext: { messages: [], tools: [] },
+      agentContext: mockAgentContext,
       toolUse: makeToolUse("bash"),
     });
 
@@ -61,7 +63,7 @@ describe("createCodingApprovalMiddleware", () => {
     });
 
     const result = await middleware.beforeToolUse?.({
-      agentContext: { messages: [], tools: [] },
+      agentContext: mockAgentContext,
       toolUse: makeToolUse("bash"),
     });
 
@@ -77,7 +79,7 @@ describe("createCodingApprovalMiddleware", () => {
     });
 
     const result = await middleware.beforeToolUse?.({
-      agentContext: { messages: [], tools: [] },
+      agentContext: mockAgentContext,
       toolUse: makeToolUse("bash"),
     });
 
@@ -102,7 +104,7 @@ describe("createCodingApprovalMiddleware", () => {
     });
 
     await middleware.beforeToolUse?.({
-      agentContext: { messages: [], tools: [] },
+      agentContext: mockAgentContext,
       toolUse: makeToolUse("bash"),
     });
 
@@ -124,7 +126,7 @@ describe("createCodingApprovalMiddleware", () => {
 
     // Should not throw despite persistence error
     const result = await middleware.beforeToolUse?.({
-      agentContext: { messages: [], tools: [] },
+      agentContext: mockAgentContext,
       toolUse: makeToolUse("bash"),
     });
 
@@ -139,7 +141,7 @@ describe("createCodingApprovalMiddleware", () => {
     });
 
     const result = await middleware.beforeToolUse?.({
-      agentContext: { messages: [], tools: [] },
+      agentContext: mockAgentContext,
       toolUse: makeToolUse("bash"),
     });
 

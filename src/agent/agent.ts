@@ -338,7 +338,7 @@ export class Agent {
   private async _beforeToolUse(toolUse: ToolUseContent): Promise<{ skip: boolean; result?: unknown }> {
     for (const middleware of this.middlewares) {
       if (!middleware.beforeToolUse) continue;
-      const result = await middleware.beforeToolUse({ agentContext: this._context, toolUse });
+      const result = await middleware.beforeToolUse({ agentContext: this._context as never, toolUse });
       if (result && typeof result === "object" && "__skip" in result) {
         return { skip: true, result: result.result };
       }
