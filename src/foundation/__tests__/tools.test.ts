@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { defineTool } from "../tools/function-tool";
-import { StructuredToolResult } from "../tools/structured-tool-result";
+import type { StructuredToolResult } from "../tools/structured-tool-result";
 
 describe("defineTool", () => {
   test("creates a tool with the given name, description, and parameters", () => {

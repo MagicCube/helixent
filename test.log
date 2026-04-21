@@ -1,0 +1,615 @@
+    ~/Desktop/helixent    test/complete-unit-tests !7 ▓▒░ bun test                                                                                                                     ░▒▓ ✔  22:21:33 
+bun test v1.3.11 (af24e281)
+
+src/foundation/__tests__/tools.test.ts:
+✓ defineTool > creates a tool with the given name, description, and parameters
+✓ defineTool > invoke calls the provided function with input [0.20ms]
+✓ defineTool > invoke passes abort signal when provided [0.11ms]
+✓ StructuredToolResult types > success result shape is valid [0.16ms]
+✓ StructuredToolResult types > error result shape is valid [0.02ms]
+✓ StructuredToolResult types > error result without optional fields is valid [0.02ms]
+
+src/agent/__tests__/tool-result-policy.test.ts:
+✓ getToolResultPolicy > returns summary-first policy for search and filesystem inspection tools [0.06ms]
+✓ getToolResultPolicy > returns data-carrying policy for read_file [0.04ms]
+✓ getToolResultPolicy > returns default policy for unknown tools
+
+src/agent/__tests__/skills.test.ts:
+✓ readSkillFrontMatter > reads frontmatter from a SKILL.md file [3.29ms]
+✓ readSkillFrontMatter > throws when file does not exist [0.38ms]
+✓ readSkillFrontMatter > handles SKILL.md with no frontmatter [0.62ms]
+✓ listSkills > discovers skills from a directory with SKILL.md subfolders [1.88ms]
+✓ listSkills > skips directories without SKILL.md [0.72ms]
+✓ listSkills > skips non-directory entries [0.71ms]
+✓ listSkills > returns empty array for non-existent directory [0.19ms]
+
+src/agent/__tests__/todos.test.ts:
+✓ createTodoSystem > tool invocation > replaces list when merge is false [1.41ms]
+✓ createTodoSystem > tool invocation > merges by id when merge is true [0.37ms]
+✓ createTodoSystem > tool invocation > appends new items when merging with new ids [0.17ms]
+✓ createTodoSystem > tool invocation > handles empty todo list [0.14ms]
+✓ createTodoSystem > tool invocation > counts all status types correctly [0.38ms]
+✓ createTodoSystem > middleware > beforeModel does nothing when store is empty [0.34ms]
+
+src/agent/__tests__/tool-result-summary.test.ts:
+✓ summarizeToolResultText > error prefix passthrough > returns content as-is when it starts with 'Error:'
+✓ summarizeToolResultText > error prefix passthrough > returns content as-is for 'Error:' with no additional text
+✓ summarizeToolResultText > JSON success path > returns summary when ok is true and summary is a string [0.11ms]
+✓ summarizeToolResultText > JSON success path > returns null when ok is true but summary is not a string
+✓ summarizeToolResultText > JSON success path > returns null when ok is true but summary is missing
+✓ summarizeToolResultText > JSON error path > returns formatted error with code when ok is false
+✓ summarizeToolResultText > JSON error path > prefers summary over error for the message when ok is false
+✓ summarizeToolResultText > JSON error path > falls back to error string when summary is not a string and ok is false [0.08ms]
+✓ summarizeToolResultText > JSON error path > returns formatted error without code when ok is false and code is missing
+✓ summarizeToolResultText > JSON error path > returns formatted error using raw content when neither summary nor error is a string [0.02ms]
+✓ summarizeToolResultText > non-JSON content > returns null for plain text that is not an error [0.06ms]
+✓ summarizeToolResultText > non-JSON content > returns null for empty string
+✓ summarizeToolResultText > non-JSON content > returns null for invalid JSON
+✓ summarizeToolResultText > non-JSON content > returns null for JSON with neither ok true nor ok false
+
+src/agent/__tests__/tool-result-runtime.test.ts:
+✓ inferToolErrorKind > maps common tool error code families
+✓ normalizeToolResult > preserves structured success results [0.24ms]
+✓ normalizeToolResult > preserves structured errors and infers error kind
+✓ normalizeToolResult > normalizes legacy string errors
+✓ normalizeToolResult > normalizes plain success strings
+✓ formatToolResultForMessage > omits data for summary-first tools [0.17ms]
+✓ formatToolResultForMessage > preserves data for content-carrying tools [0.10ms]
+✓ formatToolResultForMessage > passes through raw read_file text results
+✓ formatToolResultForMessage > passes through read_file text that starts with Error: verbatim [0.06ms]
+✓ formatToolResultForMessage > formats errors with stable structured shape
+✓ formatToolResultForMessage > always returns valid json when payload exceeds limits
+
+src/cli/settings/__tests__/settings-loader.test.ts:
+✓ SettingsLoader > loadAllowList unions permissions.allow from user, project, and local files [3.08ms]
+[helixent] Could not read /var/folders/qy/qgkbp2gd5f9g5398v2qw8zgr0000gn/T/helixent-settings-bhnoGA/helixent-home/settings.json; skipping settings layer.
+✓ SettingsLoader > ignores invalid user layer and still merges project and local [1.39ms]
+✓ SettingsLoader > last layer wins for non-allow keys under permissions [1.39ms]
+✓ SettingsWriter > appendAllowedTool writes only to project settings.local.json [1.39ms]
+
+src/cli/settings/__tests__/settings.test.ts:
+✓ settingsSchema > accepts valid settings with permissions [1.01ms]
+✓ settingsSchema > accepts empty object [0.10ms]
+✓ settingsSchema > accepts unknown additional fields (passthrough) [0.05ms]
+✓ settingsSchema > accepts permissions with additional fields (passthrough) [0.03ms]
+✓ appendToolToAllowList > adds tool to empty allow list [0.05ms]
+✓ appendToolToAllowList > appends tool to existing allow list [0.16ms]
+✓ appendToolToAllowList > does not duplicate tool in allow list [0.04ms]
+✓ appendToolToAllowList > creates permissions object when it does not exist [0.05ms]
+✓ appendToolToAllowList > handles non-object permissions gracefully [0.03ms]
+✓ appendToolToAllowList > handles array permissions gracefully [0.03ms]
+✓ appendToolToAllowList > filters non-string entries from existing allow list
+✓ appendToolToAllowList > preserves other fields in the document [0.06ms]
+
+src/cli/config/__tests__/schema.test.ts:
+✓ modelEntrySchema > accepts valid model entry with required fields [0.68ms]
+✓ modelEntrySchema > accepts model entry with explicit openai provider [0.07ms]
+✓ modelEntrySchema > accepts model entry with anthropic provider [0.02ms]
+✓ modelEntrySchema > defaults provider to openai when not specified [0.03ms]
+✓ modelEntrySchema > rejects empty name [0.25ms]
+✓ modelEntrySchema > rejects empty baseURL [0.12ms]
+✓ modelEntrySchema > rejects empty APIKey
+✓ modelEntrySchema > rejects invalid provider [0.16ms]
+✓ helixentConfigSchema > accepts valid config with models [0.15ms]
+✓ helixentConfigSchema > accepts config with defaultModel matching a model name [0.05ms]
+✓ helixentConfigSchema > rejects empty models array [0.04ms]
+✓ helixentConfigSchema > rejects defaultModel that does not match any model name [0.10ms]
+✓ helixentConfigSchema > accepts multiple models [0.05ms]
+
+src/cli/tui/__tests__/command-registry.test.ts:
+✓ resolveBuiltinCommand > resolves a bare builtin [0.31ms]
+✓ resolveBuiltinCommand > captures trailing args after a builtin [0.06ms]
+✓ resolveBuiltinCommand > treats input with no leading slash the same way
+✓ resolveBuiltinCommand > returns null for unknown commands and empty input [0.03ms]
+✓ formatHelp > lists builtins and skills when called with no target [0.10ms]
+✓ formatHelp > renders details for a single command [0.04ms]
+✓ formatHelp > tolerates a leading slash and case in target [0.02ms]
+✓ formatHelp > returns an error message for unknown targets [0.01ms]
+
+src/coding/tools/__tests__/list-files.test.ts:
+✓ listFilesTool > lists directory entries recursively [2.23ms]
+✓ listFilesTool > returns structured error for missing directory [0.51ms]
+
+src/coding/tools/__tests__/ask-user-question-manager.test.ts:
+✓ AskUserQuestionManager > resolves requests in FIFO order [0.36ms]
+✓ AskUserQuestionManager > notifies subscriber with current request [0.06ms]
+
+src/coding/tools/__tests__/ask-user-question.test.ts:
+✓ askUserQuestionParametersSchema > accepts valid single-select question [0.59ms]
+✓ askUserQuestionParametersSchema > accepts valid multi-select question [0.01ms]
+✓ askUserQuestionParametersSchema > rejects empty questions array [0.08ms]
+✓ askUserQuestionParametersSchema > rejects more than 4 questions [0.04ms]
+✓ askUserQuestionParametersSchema > rejects question with fewer than 2 options [0.09ms]
+✓ askUserQuestionParametersSchema > rejects question with more than 4 options [0.07ms]
+✓ askUserQuestionParametersSchema > rejects header longer than 12 characters [0.01ms]
+✓ createAskUserQuestionTool > returns result from callback as JSON string [0.24ms]
+✓ createAskUserQuestionTool > throws on abort signal before callback [0.13ms]
+✓ createAskUserQuestionTool > throws when answer count does not match question count [0.06ms]
+✓ createAskUserQuestionTool > throws when single-select question has multiple selections
+✓ createAskUserQuestionTool > throws when answer contains unknown label [0.14ms]
+✓ createAskUserQuestionTool > throws when multi-select question has no selections [0.09ms]
+✓ createAskUserQuestionTool > throws when answer count does not match question count [0.07ms]
+
+src/coding/tools/__tests__/str-replace.test.ts:
+✓ strReplaceTool > replaces all occurrences when count is omitted [2.53ms]
+✓ strReplaceTool > replaces at most count occurrences [1.08ms]
+✓ strReplaceTool > returns unchanged when count is zero [0.59ms]
+✓ strReplaceTool > returns error when file is missing [0.33ms]
+✓ strReplaceTool > returns error when old is empty [0.53ms]
+✓ strReplaceTool > returns error when old is not found [1.10ms]
+✓ strReplaceTool > returns error for relative path [0.34ms]
+
+src/coding/tools/__tests__/apply-patch.test.ts:
+✓ applyPatchTool > applies a simple patch to an existing file [1.63ms]
+✓ applyPatchTool > rejects file deletion patches [0.72ms]
+✓ applyPatchTool > fails when hunk counts do not match contents [0.82ms]
+
+src/coding/tools/__tests__/tool-utils.test.ts:
+✓ tool-result helpers > okToolResult returns stable success shape [0.70ms]
+✓ tool-result helpers > errorToolResult returns stable error shape [0.08ms]
+✓ truncateText > does not truncate short text [0.01ms]
+✓ truncateText > truncates long text with suffix [0.03ms]
+
+src/coding/tools/__tests__/write-file.test.ts:
+✓ writeFileTool > writes content to an absolute path [1.00ms]
+✓ writeFileTool > overwrites an existing file [0.74ms]
+✓ writeFileTool > writes into an existing subdirectory [0.90ms]
+✓ writeFileTool > creates parent directories when they do not exist [1.32ms]
+✓ writeFileTool > returns error for relative path [0.59ms]
+
+src/coding/tools/__tests__/mkdir.test.ts:
+✓ mkdirTool > creates a directory recursively [0.94ms]
+✓ mkdirTool > returns structured error for relative path [0.27ms]
+
+src/coding/tools/__tests__/grep-search.test.ts:
+✓ grepSearchTool > returns structured error for invalid directory [0.82ms]
+✓ grepSearchTool > finds matches with ripgrep when available [1.25ms]
+
+src/coding/tools/__tests__/tool-result.test.ts:
+✓ okToolResult > returns success result with data [0.04ms]
+✓ okToolResult > returns success result without data when data is undefined [0.01ms]
+✓ errorToolResult > returns error result with code and details [0.02ms]
+✓ errorToolResult > returns error result without code [0.03ms]
+✓ errorToolResult > returns error result with code but no details
+
+src/coding/tools/__tests__/move-path.test.ts:
+✓ movePathTool > moves a file to a new path [1.15ms]
+✓ movePathTool > returns structured error for relative source path [0.24ms]
+
+src/coding/tools/__tests__/glob-search.test.ts:
+✓ globSearchTool > finds files matching a glob pattern [1.70ms]
+✓ globSearchTool > returns structured error for invalid directory [0.37ms]
+
+src/coding/tools/__tests__/file-info.test.ts:
+✓ fileInfoTool > returns metadata for a file [1.14ms]
+✓ fileInfoTool > returns structured error for relative path [0.30ms]
+
+src/coding/tools/__tests__/bash.test.ts:
+✓ bashTool > returns stdout for a successful command [10.38ms]
+✓ bashTool > returns an error string when the command fails [5.07ms]
+
+src/coding/tools/__tests__/read-file.test.ts:
+✓ readFileTool > returns raw content for whole-file reads [1.14ms]
+✓ readFileTool > returns numbered lines for ranged reads [0.76ms]
+✓ readFileTool > returns structured error for invalid range [0.53ms]
+✓ readFileTool > returns structured error when file is missing [0.30ms]
+
+src/coding/permissions/__tests__/coding-approval-middleware.test.ts:
+✓ createCodingApprovalMiddleware > allows tools not in the requiresApproval list [0.23ms]
+✓ createCodingApprovalMiddleware > asks user for tools in the requiresApproval list
+✓ createCodingApprovalMiddleware > skips approval when tool is in the allow list [0.10ms]
+✓ createCodingApprovalMiddleware > returns skip result when user denies [0.09ms]
+✓ createCodingApprovalMiddleware > persists tool when user allows always for project [0.09ms]
+[helixent] Could not persist allow for bash: warn: disk full
+      at persistAllowedTool (/Users/yancy/Desktop/helixent/src/coding/permissions/__tests__/coding-approval-middleware.test.ts:119:21)
+      at <anonymous> (/Users/yancy/Desktop/helixent/src/coding/permissions/coding-approval-middleware.ts:37:17)
+      at async <anonymous> (/Users/yancy/Desktop/helixent/src/coding/permissions/__tests__/coding-approval-middleware.test.ts:125:37)
+
+✓ createCodingApprovalMiddleware > does not throw when persistence fails on allow_always_project [0.19ms]
+✓ createCodingApprovalMiddleware > works without approvalPersistence
+
+src/coding/permissions/__tests__/requires-approval.test.ts:
+✓ CODING_TOOLS_REQUIRING_APPROVAL > contains expected tool names
+✓ CODING_TOOLS_REQUIRING_APPROVAL > is a non-empty array [0.15ms]
+✓ CODING_TOOLS_REQUIRING_APPROVAL > has no duplicate entries
+
+src/coding/permissions/__tests__/approval-manager.test.ts:
+✓ ApprovalManager > askUser queues a request and subscriber receives it [0.15ms]
+✓ ApprovalManager > respond resolves the pending request with the decision [0.07ms]
+✓ ApprovalManager > respond does nothing when no request is pending [0.02ms]
+✓ ApprovalManager > processes queued requests sequentially
+✓ ApprovalManager > subscriber receives null when queue empties [0.11ms]
+✓ ApprovalManager > subscribe returns unsubscribe function [0.07ms]
+
+src/community/anthropic/__tests__/utils.test.ts:
+✓ extractSystemPrompt > returns undefined when no system messages exist [0.03ms]
+✓ extractSystemPrompt > extracts text from a single system message [0.14ms]
+✓ extractSystemPrompt > joins multiple system messages with double newline [0.03ms]
+✓ extractSystemPrompt > joins multiple text blocks within a system message [0.04ms]
+✓ convertToAnthropicMessages > excludes system messages [0.09ms]
+✓ convertToAnthropicMessages > converts user message with text [0.03ms]
+✓ convertToAnthropicMessages > converts user message with image_url [0.03ms]
+✓ convertToAnthropicMessages > converts assistant message with text and tool_use
+✓ convertToAnthropicMessages > converts assistant message with thinking content
+✓ convertToAnthropicMessages > converts tool messages as user messages with tool_result
+✓ parseAssistantMessage (Anthropic) > parses text blocks [0.13ms]
+✓ parseAssistantMessage (Anthropic) > parses thinking blocks with signature [0.03ms]
+✓ parseAssistantMessage (Anthropic) > parses tool_use blocks [0.02ms]
+✓ parseAssistantMessage (Anthropic) > includes usage when provided [0.08ms]
+✓ convertToAnthropicTools > converts tools to Anthropic format [0.08ms]
+✓ convertToAnthropicTools > returns empty array for no tools [0.01ms]
+
+src/community/anthropic/__tests__/stream-utils.test.ts:
+✓ StreamAccumulator (Anthropic) > accumulates text from content_block_start and delta [0.33ms]
+✓ StreamAccumulator (Anthropic) > accumulates thinking content [0.07ms]
+✓ StreamAccumulator (Anthropic) > preserves thinking signature [0.02ms]
+✓ StreamAccumulator (Anthropic) > accumulates tool_use input JSON progressively [0.11ms]
+✓ StreamAccumulator (Anthropic) > returns empty input for incomplete tool_use JSON [0.09ms]
+✓ StreamAccumulator (Anthropic) > captures usage from message_start and message_delta [0.06ms]
+✓ StreamAccumulator (Anthropic) > handles multiple blocks in order [0.06ms]
+✓ StreamAccumulator (Anthropic) > ignores unknown event types [0.02ms]
+✓ StreamAccumulator (Anthropic) > returns empty content for text block with no text [0.01ms]
+
+src/community/openai/__tests__/utils.test.ts:
+✓ convertToOpenAIMessages > passes system messages through unchanged [0.10ms]
+✓ convertToOpenAIMessages > passes user messages through unchanged [0.02ms]
+✓ convertToOpenAIMessages > converts assistant message with text content [0.02ms]
+✓ convertToOpenAIMessages > converts assistant message with tool_use content
+✓ convertToOpenAIMessages > skips thinking content in assistant messages
+✓ convertToOpenAIMessages > converts tool messages into separate tool role messages [0.12ms]
+✓ convertToOpenAIMessages > handles mixed assistant content (text + tool_use)
+✓ parseAssistantMessage > parses text content [0.07ms]
+✓ parseAssistantMessage > parses reasoning_content as thinking [0.02ms]
+✓ parseAssistantMessage > parses tool_calls [0.02ms]
+✓ parseAssistantMessage > includes usage when provided [0.02ms]
+✓ parseAssistantMessage > handles empty content string
+✓ convertToOpenAITools > converts tools to OpenAI format [0.07ms]
+✓ convertToOpenAITools > returns empty array for no tools [0.01ms]
+
+src/community/openai/__tests__/stream-utils.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+82 |           delta: { tool_calls: [{ index: 0, function: { arguments: ':"ls"}' }] },
+                                                                                  ^
+error: Expected "}" but found "]"
+    at /Users/yancy/Desktop/helixent/src/community/openai/__tests__/stream-utils.test.ts:82:78
+
+82 |           delta: { tool_calls: [{ index: 0, function: { arguments: ':"ls"}' }] },
+                                                                                    ^
+error: Expected "]" but found "}"
+    at /Users/yancy/Desktop/helixent/src/community/openai/__tests__/stream-utils.test.ts:82:80
+
+85 |       ],
+           ^
+error: Expected identifier but found "]"
+    at /Users/yancy/Desktop/helixent/src/community/openai/__tests__/stream-utils.test.ts:85:7
+
+86 |     });
+         ^
+error: Expected " =" but found "}"
+    at /Users/yancy/Desktop/helixent/src/community/openai/__tests__/stream-utils.test.ts:86:5
+
+86 |     });
+          ^
+error: Unexpected )
+    at /Users/yancy/Desktop/helixent/src/community/openai/__tests__/stream-utils.test.ts:86:6
+-------------------------------
+
+
+1 tests failed:
+
+ 197 pass
+ 1 fail
+ 1 error
+ 314 expect() calls
+Ran 198 tests across 32 files. [162.00ms]
+
+    ~/Desktop/helixent    test/complete-unit-tests !7 ▓▒░ bun test                                                                                                                   ░▒▓ 1 ✘  22:21:35 
+bun test v1.3.11 (af24e281)
+
+src/foundation/__tests__/tools.test.ts:
+✓ defineTool > creates a tool with the given name, description, and parameters [0.80ms]
+✓ defineTool > invoke calls the provided function with input [0.32ms]
+✓ defineTool > invoke passes abort signal when provided [2.12ms]
+✓ StructuredToolResult types > success result shape is valid
+✓ StructuredToolResult types > error result shape is valid [0.18ms]
+✓ StructuredToolResult types > error result without optional fields is valid [0.26ms]
+
+src/agent/__tests__/tool-result-policy.test.ts:
+✓ getToolResultPolicy > returns summary-first policy for search and filesystem inspection tools [0.29ms]
+✓ getToolResultPolicy > returns data-carrying policy for read_file [0.02ms]
+✓ getToolResultPolicy > returns default policy for unknown tools [0.04ms]
+
+src/agent/__tests__/skills.test.ts:
+✓ readSkillFrontMatter > reads frontmatter from a SKILL.md file [8.63ms]
+✓ readSkillFrontMatter > throws when file does not exist [0.33ms]
+✓ readSkillFrontMatter > handles SKILL.md with no frontmatter [0.52ms]
+✓ listSkills > discovers skills from a directory with SKILL.md subfolders [2.12ms]
+✓ listSkills > skips directories without SKILL.md [0.55ms]
+✓ listSkills > skips non-directory entries [0.75ms]
+✓ listSkills > returns empty array for non-existent directory [0.76ms]
+
+src/agent/__tests__/todos.test.ts:
+✓ createTodoSystem > tool invocation > replaces list when merge is false [1.63ms]
+✓ createTodoSystem > tool invocation > merges by id when merge is true [0.23ms]
+✓ createTodoSystem > tool invocation > appends new items when merging with new ids [0.25ms]
+✓ createTodoSystem > tool invocation > handles empty todo list [0.08ms]
+✓ createTodoSystem > tool invocation > counts all status types correctly [0.38ms]
+✓ createTodoSystem > middleware > beforeModel does nothing when store is empty [0.65ms]
+
+src/agent/__tests__/tool-result-summary.test.ts:
+✓ summarizeToolResultText > error prefix passthrough > returns content as-is when it starts with 'Error:' [0.08ms]
+✓ summarizeToolResultText > error prefix passthrough > returns content as-is for 'Error:' with no additional text [0.02ms]
+✓ summarizeToolResultText > JSON success path > returns summary when ok is true and summary is a string [0.06ms]
+✓ summarizeToolResultText > JSON success path > returns null when ok is true but summary is not a string [0.55ms]
+✓ summarizeToolResultText > JSON success path > returns null when ok is true but summary is missing [0.03ms]
+✓ summarizeToolResultText > JSON error path > returns formatted error with code when ok is false [0.02ms]
+✓ summarizeToolResultText > JSON error path > prefers summary over error for the message when ok is false
+✓ summarizeToolResultText > JSON error path > falls back to error string when summary is not a string and ok is false [0.09ms]
+✓ summarizeToolResultText > JSON error path > returns formatted error without code when ok is false and code is missing
+✓ summarizeToolResultText > JSON error path > returns formatted error using raw content when neither summary nor error is a string [0.02ms]
+✓ summarizeToolResultText > non-JSON content > returns null for plain text that is not an error [0.03ms]
+✓ summarizeToolResultText > non-JSON content > returns null for empty string [0.05ms]
+✓ summarizeToolResultText > non-JSON content > returns null for invalid JSON [0.01ms]
+✓ summarizeToolResultText > non-JSON content > returns null for JSON with neither ok true nor ok false [0.02ms]
+
+src/agent/__tests__/tool-result-runtime.test.ts:
+✓ inferToolErrorKind > maps common tool error code families [0.08ms]
+✓ normalizeToolResult > preserves structured success results [0.16ms]
+✓ normalizeToolResult > preserves structured errors and infers error kind [0.02ms]
+✓ normalizeToolResult > normalizes legacy string errors [0.02ms]
+✓ normalizeToolResult > normalizes plain success strings [0.03ms]
+✓ formatToolResultForMessage > omits data for summary-first tools [0.09ms]
+✓ formatToolResultForMessage > preserves data for content-carrying tools [0.10ms]
+✓ formatToolResultForMessage > passes through raw read_file text results [0.05ms]
+✓ formatToolResultForMessage > passes through read_file text that starts with Error: verbatim
+✓ formatToolResultForMessage > formats errors with stable structured shape
+✓ formatToolResultForMessage > always returns valid json when payload exceeds limits [0.14ms]
+
+src/cli/settings/__tests__/settings-loader.test.ts:
+✓ SettingsLoader > loadAllowList unions permissions.allow from user, project, and local files [4.01ms]
+[helixent] Could not read /var/folders/qy/qgkbp2gd5f9g5398v2qw8zgr0000gn/T/helixent-settings-HiuvhZ/helixent-home/settings.json; skipping settings layer.
+✓ SettingsLoader > ignores invalid user layer and still merges project and local [1.77ms]
+✓ SettingsLoader > last layer wins for non-allow keys under permissions [1.69ms]
+✓ SettingsWriter > appendAllowedTool writes only to project settings.local.json [2.16ms]
+
+src/cli/settings/__tests__/settings.test.ts:
+✓ settingsSchema > accepts valid settings with permissions [0.65ms]
+✓ settingsSchema > accepts empty object [0.04ms]
+✓ settingsSchema > accepts unknown additional fields (passthrough)
+✓ settingsSchema > accepts permissions with additional fields (passthrough) [0.06ms]
+✓ appendToolToAllowList > adds tool to empty allow list [0.02ms]
+✓ appendToolToAllowList > appends tool to existing allow list [0.03ms]
+✓ appendToolToAllowList > does not duplicate tool in allow list
+✓ appendToolToAllowList > creates permissions object when it does not exist
+✓ appendToolToAllowList > handles non-object permissions gracefully [0.01ms]
+✓ appendToolToAllowList > handles array permissions gracefully
+✓ appendToolToAllowList > filters non-string entries from existing allow list [0.02ms]
+✓ appendToolToAllowList > preserves other fields in the document [0.02ms]
+
+src/cli/config/__tests__/schema.test.ts:
+✓ modelEntrySchema > accepts valid model entry with required fields [0.42ms]
+✓ modelEntrySchema > accepts model entry with explicit openai provider [0.05ms]
+✓ modelEntrySchema > accepts model entry with anthropic provider [0.02ms]
+✓ modelEntrySchema > defaults provider to openai when not specified
+✓ modelEntrySchema > rejects empty name [0.25ms]
+✓ modelEntrySchema > rejects empty baseURL [0.09ms]
+✓ modelEntrySchema > rejects empty APIKey [0.06ms]
+✓ modelEntrySchema > rejects invalid provider [0.07ms]
+✓ helixentConfigSchema > accepts valid config with models [0.17ms]
+✓ helixentConfigSchema > accepts config with defaultModel matching a model name [0.04ms]
+✓ helixentConfigSchema > rejects empty models array [0.07ms]
+✓ helixentConfigSchema > rejects defaultModel that does not match any model name [0.08ms]
+✓ helixentConfigSchema > accepts multiple models [0.07ms]
+
+src/cli/tui/__tests__/command-registry.test.ts:
+✓ resolveBuiltinCommand > resolves a bare builtin [0.31ms]
+✓ resolveBuiltinCommand > captures trailing args after a builtin [0.02ms]
+✓ resolveBuiltinCommand > treats input with no leading slash the same way
+✓ resolveBuiltinCommand > returns null for unknown commands and empty input [0.03ms]
+✓ formatHelp > lists builtins and skills when called with no target [0.10ms]
+✓ formatHelp > renders details for a single command
+✓ formatHelp > tolerates a leading slash and case in target [0.07ms]
+✓ formatHelp > returns an error message for unknown targets
+
+src/coding/tools/__tests__/list-files.test.ts:
+✓ listFilesTool > lists directory entries recursively [2.85ms]
+✓ listFilesTool > returns structured error for missing directory [0.48ms]
+
+src/coding/tools/__tests__/ask-user-question-manager.test.ts:
+✓ AskUserQuestionManager > resolves requests in FIFO order [0.44ms]
+✓ AskUserQuestionManager > notifies subscriber with current request [0.06ms]
+
+src/coding/tools/__tests__/ask-user-question.test.ts:
+✓ askUserQuestionParametersSchema > accepts valid single-select question [0.57ms]
+✓ askUserQuestionParametersSchema > accepts valid multi-select question [0.04ms]
+✓ askUserQuestionParametersSchema > rejects empty questions array
+✓ askUserQuestionParametersSchema > rejects more than 4 questions [0.15ms]
+✓ askUserQuestionParametersSchema > rejects question with fewer than 2 options [0.07ms]
+✓ askUserQuestionParametersSchema > rejects question with more than 4 options [0.10ms]
+✓ askUserQuestionParametersSchema > rejects header longer than 12 characters [0.03ms]
+✓ createAskUserQuestionTool > returns result from callback as JSON string [0.32ms]
+✓ createAskUserQuestionTool > throws on abort signal before callback [0.09ms]
+✓ createAskUserQuestionTool > throws when answer count does not match question count [0.08ms]
+✓ createAskUserQuestionTool > throws when single-select question has multiple selections [0.07ms]
+✓ createAskUserQuestionTool > throws when answer contains unknown label [0.01ms]
+✓ createAskUserQuestionTool > throws when multi-select question has no selections [0.17ms]
+✓ createAskUserQuestionTool > throws when answer count does not match question count [0.05ms]
+
+src/coding/tools/__tests__/str-replace.test.ts:
+✓ strReplaceTool > replaces all occurrences when count is omitted [2.89ms]
+✓ strReplaceTool > replaces at most count occurrences [1.31ms]
+✓ strReplaceTool > returns unchanged when count is zero [0.66ms]
+✓ strReplaceTool > returns error when file is missing [0.24ms]
+✓ strReplaceTool > returns error when old is empty [0.44ms]
+✓ strReplaceTool > returns error when old is not found [0.70ms]
+✓ strReplaceTool > returns error for relative path [0.36ms]
+
+src/coding/tools/__tests__/apply-patch.test.ts:
+✓ applyPatchTool > applies a simple patch to an existing file [2.31ms]
+✓ applyPatchTool > rejects file deletion patches [0.61ms]
+✓ applyPatchTool > fails when hunk counts do not match contents [0.93ms]
+
+src/coding/tools/__tests__/tool-utils.test.ts:
+✓ tool-result helpers > okToolResult returns stable success shape [0.53ms]
+✓ tool-result helpers > errorToolResult returns stable error shape [0.05ms]
+✓ truncateText > does not truncate short text
+✓ truncateText > truncates long text with suffix [0.02ms]
+
+src/coding/tools/__tests__/write-file.test.ts:
+✓ writeFileTool > writes content to an absolute path [0.86ms]
+✓ writeFileTool > overwrites an existing file [0.63ms]
+✓ writeFileTool > writes into an existing subdirectory [0.63ms]
+✓ writeFileTool > creates parent directories when they do not exist [0.90ms]
+✓ writeFileTool > returns error for relative path [0.19ms]
+
+src/coding/tools/__tests__/mkdir.test.ts:
+✓ mkdirTool > creates a directory recursively [1.38ms]
+✓ mkdirTool > returns structured error for relative path [0.32ms]
+
+src/coding/tools/__tests__/grep-search.test.ts:
+✓ grepSearchTool > returns structured error for invalid directory [1.44ms]
+✓ grepSearchTool > finds matches with ripgrep when available [1.58ms]
+
+src/coding/tools/__tests__/tool-result.test.ts:
+✓ okToolResult > returns success result with data
+✓ okToolResult > returns success result without data when data is undefined
+✓ errorToolResult > returns error result with code and details [0.24ms]
+✓ errorToolResult > returns error result without code [0.08ms]
+✓ errorToolResult > returns error result with code but no details
+
+src/coding/tools/__tests__/move-path.test.ts:
+✓ movePathTool > moves a file to a new path [1.00ms]
+✓ movePathTool > returns structured error for relative source path [0.23ms]
+
+src/coding/tools/__tests__/glob-search.test.ts:
+✓ globSearchTool > finds files matching a glob pattern [2.39ms]
+✓ globSearchTool > returns structured error for invalid directory [0.44ms]
+
+src/coding/tools/__tests__/file-info.test.ts:
+✓ fileInfoTool > returns metadata for a file [1.57ms]
+✓ fileInfoTool > returns structured error for relative path [0.60ms]
+
+src/coding/tools/__tests__/bash.test.ts:
+✓ bashTool > returns stdout for a successful command [9.17ms]
+✓ bashTool > returns an error string when the command fails [6.17ms]
+
+src/coding/tools/__tests__/read-file.test.ts:
+✓ readFileTool > returns raw content for whole-file reads [1.17ms]
+✓ readFileTool > returns numbered lines for ranged reads [0.73ms]
+✓ readFileTool > returns structured error for invalid range [0.63ms]
+✓ readFileTool > returns structured error when file is missing [0.26ms]
+
+src/coding/permissions/__tests__/coding-approval-middleware.test.ts:
+✓ createCodingApprovalMiddleware > allows tools not in the requiresApproval list [0.33ms]
+✓ createCodingApprovalMiddleware > asks user for tools in the requiresApproval list [0.09ms]
+✓ createCodingApprovalMiddleware > skips approval when tool is in the allow list [0.08ms]
+✓ createCodingApprovalMiddleware > returns skip result when user denies [0.07ms]
+✓ createCodingApprovalMiddleware > persists tool when user allows always for project [0.06ms]
+[helixent] Could not persist allow for bash: warn: disk full
+      at persistAllowedTool (/Users/yancy/Desktop/helixent/src/coding/permissions/__tests__/coding-approval-middleware.test.ts:119:21)
+      at <anonymous> (/Users/yancy/Desktop/helixent/src/coding/permissions/coding-approval-middleware.ts:37:17)
+      at async <anonymous> (/Users/yancy/Desktop/helixent/src/coding/permissions/__tests__/coding-approval-middleware.test.ts:125:37)
+
+✓ createCodingApprovalMiddleware > does not throw when persistence fails on allow_always_project [0.99ms]
+✓ createCodingApprovalMiddleware > works without approvalPersistence [0.06ms]
+
+src/coding/permissions/__tests__/requires-approval.test.ts:
+✓ CODING_TOOLS_REQUIRING_APPROVAL > contains expected tool names [0.05ms]
+✓ CODING_TOOLS_REQUIRING_APPROVAL > is a non-empty array [0.27ms]
+✓ CODING_TOOLS_REQUIRING_APPROVAL > has no duplicate entries [0.02ms]
+
+src/coding/permissions/__tests__/approval-manager.test.ts:
+✓ ApprovalManager > askUser queues a request and subscriber receives it [0.22ms]
+✓ ApprovalManager > respond resolves the pending request with the decision [0.05ms]
+✓ ApprovalManager > respond does nothing when no request is pending [0.06ms]
+✓ ApprovalManager > processes queued requests sequentially [0.08ms]
+✓ ApprovalManager > subscriber receives null when queue empties [0.05ms]
+✓ ApprovalManager > subscribe returns unsubscribe function [0.12ms]
+
+src/community/anthropic/__tests__/utils.test.ts:
+✓ extractSystemPrompt > returns undefined when no system messages exist
+✓ extractSystemPrompt > extracts text from a single system message [0.10ms]
+✓ extractSystemPrompt > joins multiple system messages with double newline
+✓ extractSystemPrompt > joins multiple text blocks within a system message
+✓ convertToAnthropicMessages > excludes system messages [0.14ms]
+✓ convertToAnthropicMessages > converts user message with text
+✓ convertToAnthropicMessages > converts user message with image_url
+✓ convertToAnthropicMessages > converts assistant message with text and tool_use [0.10ms]
+✓ convertToAnthropicMessages > converts assistant message with thinking content [0.02ms]
+✓ convertToAnthropicMessages > converts tool messages as user messages with tool_result [0.02ms]
+✓ parseAssistantMessage (Anthropic) > parses text blocks [0.05ms]
+✓ parseAssistantMessage (Anthropic) > parses thinking blocks with signature [0.02ms]
+✓ parseAssistantMessage (Anthropic) > parses tool_use blocks
+✓ parseAssistantMessage (Anthropic) > includes usage when provided
+✓ convertToAnthropicTools > converts tools to Anthropic format [0.09ms]
+✓ convertToAnthropicTools > returns empty array for no tools [0.03ms]
+
+src/community/anthropic/__tests__/stream-utils.test.ts:
+✓ StreamAccumulator (Anthropic) > accumulates text from content_block_start and delta [0.23ms]
+✓ StreamAccumulator (Anthropic) > accumulates thinking content [0.04ms]
+✓ StreamAccumulator (Anthropic) > preserves thinking signature
+✓ StreamAccumulator (Anthropic) > accumulates tool_use input JSON progressively [0.08ms]
+✓ StreamAccumulator (Anthropic) > returns empty input for incomplete tool_use JSON [0.06ms]
+✓ StreamAccumulator (Anthropic) > captures usage from message_start and message_delta [0.04ms]
+✓ StreamAccumulator (Anthropic) > handles multiple blocks in order [0.05ms]
+✓ StreamAccumulator (Anthropic) > ignores unknown event types [0.02ms]
+✓ StreamAccumulator (Anthropic) > returns empty content for text block with no text
+
+src/community/openai/__tests__/utils.test.ts:
+✓ convertToOpenAIMessages > passes system messages through unchanged
+✓ convertToOpenAIMessages > passes user messages through unchanged [0.10ms]
+✓ convertToOpenAIMessages > converts assistant message with text content [0.17ms]
+✓ convertToOpenAIMessages > converts assistant message with tool_use content [0.10ms]
+✓ convertToOpenAIMessages > skips thinking content in assistant messages [0.04ms]
+✓ convertToOpenAIMessages > converts tool messages into separate tool role messages [0.03ms]
+✓ convertToOpenAIMessages > handles mixed assistant content (text + tool_use)
+✓ parseAssistantMessage > parses text content [0.08ms]
+✓ parseAssistantMessage > parses reasoning_content as thinking [0.03ms]
+✓ parseAssistantMessage > parses tool_calls
+✓ parseAssistantMessage > includes usage when provided
+✓ parseAssistantMessage > handles empty content string [0.06ms]
+✓ convertToOpenAITools > converts tools to OpenAI format [0.06ms]
+✓ convertToOpenAITools > returns empty array for no tools [0.04ms]
+
+src/community/openai/__tests__/stream-utils.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+108 |           delta: { tool_calls: [{ index: 0, id: "call_1", function: { name: "bash", arguments: '{"command' }] },
+                                                                                                                  ^
+error: Expected "}" but found "]"
+    at /Users/yancy/Desktop/helixent/src/community/openai/__tests__/stream-utils.test.ts:108:109
+
+108 |           delta: { tool_calls: [{ index: 0, id: "call_1", function: { name: "bash", arguments: '{"command' }] },
+                                                                                                                    ^
+error: Expected "]" but found "}"
+    at /Users/yancy/Desktop/helixent/src/community/openai/__tests__/stream-utils.test.ts:108:111
+
+111 |       ],
+            ^
+error: Expected identifier but found "]"
+    at /Users/yancy/Desktop/helixent/src/community/openai/__tests__/stream-utils.test.ts:111:7
+
+112 |     });
+          ^
+error: Expected " =" but found "}"
+    at /Users/yancy/Desktop/helixent/src/community/openai/__tests__/stream-utils.test.ts:112:5
+
+112 |     });
+           ^
+error: Unexpected )
+    at /Users/yancy/Desktop/helixent/src/community/openai/__tests__/stream-utils.test.ts:112:6
+-------------------------------
+
+
+1 tests failed:
+
+ 197 pass
+ 1 fail
+ 1 error
+ 314 expect() calls
+Ran 198 tests across 32 files. [271.00ms]
+
+    ~/Desktop/helixent    test/complete-unit-tests !7 ?1 ▓▒░                                                                                                                         ░▒▓ 1 ✘  22:23:02 

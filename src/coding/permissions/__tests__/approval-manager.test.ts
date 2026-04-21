@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
+import type { ToolUseContent } from "@/foundation";
+
 import { ApprovalManager } from "../approval-manager";
 import type { ApprovalDecision } from "../approval-types";
-import type { ToolUseContent } from "@/foundation";
 
 function makeToolUse(name: string): ToolUseContent {
   return { type: "tool_use", id: "tc_1", name, input: {} };

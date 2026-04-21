@@ -1,12 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
+import type { Message } from "@/foundation";
+
 import {
   extractSystemPrompt,
   convertToAnthropicMessages,
   parseAssistantMessage,
   convertToAnthropicTools,
 } from "../utils";
-import type { Message } from "@/foundation";
 
 describe("extractSystemPrompt", () => {
   test("returns undefined when no system messages exist", () => {

@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
-import { convertToOpenAIMessages, parseAssistantMessage, convertToOpenAITools } from "../utils";
 import type { Message } from "@/foundation";
+
+import { convertToOpenAIMessages, parseAssistantMessage, convertToOpenAITools } from "../utils";
 
 describe("convertToOpenAIMessages", () => {
   test("passes system messages through unchanged", () => {

@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import { createCodingApprovalMiddleware } from "../coding-approval-middleware";
-import type { ApprovalDecision } from "../approval-types";
 import type { ToolUseContent } from "@/foundation";
+
+import type { ApprovalDecision } from "../approval-types";
+import { createCodingApprovalMiddleware } from "../coding-approval-middleware";
 
 function makeToolUse(name: string): ToolUseContent {
   return { type: "tool_use", id: "tc_1", name, input: {} };
