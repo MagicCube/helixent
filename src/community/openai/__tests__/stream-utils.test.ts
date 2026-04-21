@@ -66,7 +66,7 @@ describe("StreamAccumulator (OpenAI)", () => {
       choices: [
         {
           index: 0,
-          delta: { tool_calls: [{ index: 0, function: { arguments: '{"command"' }] },
+          delta: { tool_calls: [{ index: 0, function: { arguments: '{"command"' } }] },
           finish_reason: null,
         },
       ],
@@ -79,7 +79,7 @@ describe("StreamAccumulator (OpenAI)", () => {
       choices: [
         {
           index: 0,
-          delta: { tool_calls: [{ index: 0, function: { arguments: ':"ls"}' }] },
+          delta: { tool_calls: [{ index: 0, function: { arguments: ':"ls"}' } }] },
           finish_reason: null,
         },
       ],
@@ -105,7 +105,7 @@ describe("StreamAccumulator (OpenAI)", () => {
       choices: [
         {
           index: 0,
-          delta: { tool_calls: [{ index: 0, id: "call_1", function: { name: "bash", arguments: '{"command' }] },
+          delta: { tool_calls: [{ index: 0, id: "call_1", function: { name: "bash", arguments: '{"command' } }] },
           finish_reason: null,
         },
       ],
@@ -126,7 +126,7 @@ describe("StreamAccumulator (OpenAI)", () => {
       choices: [
         {
           index: 0,
-          delta: { tool_calls: [{ index: 0, id: "call_1", function: { name: "bash", arguments: '{"command' }] },
+          delta: { tool_calls: [{ index: 0, id: "call_1", function: { name: "bash", arguments: '{"command' } }] },
           finish_reason: null,
         },
       ],

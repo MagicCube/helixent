@@ -28,7 +28,8 @@ describe("convertToOpenAIMessages", () => {
     ];
     const result = convertToOpenAIMessages(messages);
     expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({ role: "assistant", content: "Hi there" });
+    expect(result[0]).toMatchObject({ role: "assistant" });
+    expect((result[0] as { content: unknown[] }).content).toContainEqual({ type: "text", text: "Hi there" });
   });
 
   test("converts assistant message with tool_use content", () => {
@@ -67,7 +68,11 @@ describe("convertToOpenAIMessages", () => {
     ];
     const result = convertToOpenAIMessages(messages);
     expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({ role: "assistant", content: "The answer is 42." });
+    expect(result[0]).toMatchObject({ role: "assistant" });
+    expect((result[0] as { content: unknown[] }).content).toContainEqual({ type: "text", text: "The answer is 42." });
+    expect((result[0] as { content: unknown[] }).content).not.toContainEqual(
+      expect.objectContaining({ type: "thinking" }),
+    );
   });
 
   test("converts tool messages into separate tool role messages", () => {

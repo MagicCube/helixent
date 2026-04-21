@@ -82,7 +82,7 @@ describe("createTodoSystem", () => {
       const { middleware } = createTodoSystem();
       const result = await middleware.beforeModel?.({
         modelContext: { prompt: "hello", messages: [] },
-        agentContext: { messages: [], tools: [] },
+        agentContext: { prompt: "", messages: [], tools: [] },
       });
       expect(result).toBeUndefined();
     });

@@ -17,7 +17,7 @@ describe("createCodingApprovalMiddleware", () => {
     });
 
     const result = await middleware.beforeToolUse?.({
-      agentContext: { messages: [], tools: [] },
+      agentContext: { prompt: "", messages: [], tools: [] },
       toolUse: makeToolUse("read_file"),
     });
 

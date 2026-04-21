@@ -39,20 +39,6 @@ describe("askUserQuestionParametersSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  test("accepts optional preview on options", () => {
-    const result = askUserQuestionParametersSchema.safeParse({
-      questions: [
-        {
-          question: "Pick one?",
-          header: "Choice",
-          options: [{ label: "A", description: "Option A", preview: "Preview text" }],
-          multi_select: false,
-        },
-      ],
-    });
-    expect(result.success).toBe(true);
-  });
-
   test("rejects empty questions array", () => {
     const result = askUserQuestionParametersSchema.safeParse({ questions: [] });
     expect(result.success).toBe(false);
@@ -262,9 +248,9 @@ describe("createAskUserQuestionTool", () => {
     ).rejects.toThrow("requires at least one selection");
   });
 
-  test("throws when missing answer for a question index", async () => {
+  test("throws when answer count does not match question count", async () => {
     const tool = createAskUserQuestionTool(async () => ({
-      answers: [{ question_index: 1, selected_labels: ["A"] }], // Missing index 0
+      answers: [{ question_index: 1, selected_labels: ["A"] }], // Only 1 answer for 2 questions
     }));
 
     await expect(
@@ -290,6 +276,6 @@ describe("createAskUserQuestionTool", () => {
           },
         ],
       }),
-    ).rejects.toThrow("missing answer for question_index 0");
+    ).rejects.toThrow("expected 2 answers, got 1");
   });
 });

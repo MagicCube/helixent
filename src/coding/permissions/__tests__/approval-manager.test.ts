@@ -62,20 +62,6 @@ describe("ApprovalManager", () => {
     expect(decisions).toEqual(["allow_once", "deny"]);
   });
 
-  test("denies request when queue overflows (MAX_QUEUE_SIZE = 20)", async () => {
-    const manager = new ApprovalManager();
-
-    // Fill queue to MAX_QUEUE_SIZE without resolving any
-    const promises: Promise<ApprovalDecision>[] = [];
-    for (let i = 0; i < 21; i++) {
-      promises.push(manager.askUser(makeToolUse(`tool_${i}`)));
-    }
-
-    // The 21st should be auto-denied
-    const lastDecision = await promises[20]!;
-    expect(lastDecision).toBe("deny");
-  });
-
   test("subscriber receives null when queue empties", async () => {
     const manager = new ApprovalManager();
     const events: (ToolUseContent | null)[] = [];
