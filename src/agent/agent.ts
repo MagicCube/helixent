@@ -1,12 +1,13 @@
-import type {
-  AssistantMessage,
-  Model,
-  ModelContext,
-  NonSystemMessage,
-  Tool,
-  ToolMessage,
-  ToolUseContent,
-  UserMessage,
+import {
+  createToolMessage,
+  type AssistantMessage,
+  type Model,
+  type ModelContext,
+  type NonSystemMessage,
+  type Tool,
+  type ToolMessage,
+  type ToolUseContent,
+  type UserMessage,
 } from "@/foundation";
 
 import type { AgentEvent } from "./agent-event";
@@ -256,16 +257,7 @@ export class Agent {
         : Promise.race(candidates)))!;
       remaining.delete(resolved.index);
 
-      const toolMessage: ToolMessage = {
-        role: "tool",
-        content: [
-          {
-            type: "tool_result",
-            tool_use_id: resolved.toolUseId,
-            content: formatToolResultForMessage({ toolName: resolved.toolName, result: resolved.result }),
-          },
-        ],
-      };
+      const toolMessage: ToolMessage = createToolMessage(resolved.toolUseId, formatToolResultForMessage({ toolName: resolved.toolName, result: resolved.result }));
       this._appendMessage(toolMessage);
       yield { type: "message", message: toolMessage };
     }

@@ -1,4 +1,4 @@
-import type { Message } from "../messages";
+import { createSystemMessage, type Message } from "../messages";
 
 import type { ModelContext } from "./model-context";
 import type { ModelProvider, ModelProviderInvokeParams } from "./model-provider";
@@ -50,7 +50,7 @@ export class Model {
   private _buildModelProviderParams(context: ModelContext): ModelProviderInvokeParams {
     const messages: Message[] = [];
     if (context.prompt) {
-      messages.push({ role: "system", content: [{ type: "text", text: context.prompt }] });
+      messages.push(createSystemMessage(context.prompt));
     }
     messages.push(...context.messages);
     return {

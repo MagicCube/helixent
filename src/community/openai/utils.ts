@@ -6,7 +6,37 @@ import type {
   ChatCompletionTool,
 } from "openai/resources";
 
-import type { AssistantMessage, Message, TokenUsage, Tool } from "@/foundation";
+import {
+  createAssistantMessageWithContent,
+  createTextContent,
+  createThinkingContent,
+  createToolUseContent,
+  type AssistantMessage,
+  type AssistantMessageContent,
+  type Message,
+  type TokenUsage,
+  type Tool,
+} from "@/foundation";
+
+// ============================================================================
+// OpenAI SDK Content Part Helpers
+// ============================================================================
+
+function openaiToolCall(id: string, name: string, argumentsJson: string) {
+  return { type: "function" as const, id, function: { name, arguments: argumentsJson } };
+}
+
+function openaiAssistantMessage(): ChatCompletionAssistantMessageParam {
+  return { role: "assistant", content: [] };
+}
+
+function openaiToolMessage(toolCallId: string, content: string): Extract<ChatCompletionMessageParam, { role: "tool" }> {
+  return { role: "tool" as const, tool_call_id: toolCallId, content };
+}
+
+// ============================================================================
+// Conversion Functions
+// ============================================================================
 
 /**
  * Converts the messages to OpenAI ChatCompletionMessageParam messages.
@@ -19,10 +49,7 @@ export function convertToOpenAIMessages(messages: Message[]): ChatCompletionMess
     if (message.role === "system" || message.role === "user") {
       openaiMessages.push(message);
     } else if (message.role === "assistant") {
-      const assistantMessage: ChatCompletionAssistantMessageParam = {
-        role: "assistant",
-        content: [],
-      };
+      const assistantMessage = openaiAssistantMessage();
       for (const content of message.content) {
         if (content.type === "thinking") {
           continue;
@@ -30,14 +57,7 @@ export function convertToOpenAIMessages(messages: Message[]): ChatCompletionMess
           if (!assistantMessage.tool_calls) {
             assistantMessage.tool_calls = [];
           }
-          assistantMessage.tool_calls.push({
-            type: "function",
-            id: content.id,
-            function: {
-              name: content.name,
-              arguments: JSON.stringify(content.input),
-            },
-          });
+          assistantMessage.tool_calls.push(openaiToolCall(content.id, content.name, JSON.stringify(content.input)));
         } else {
           (assistantMessage.content as ChatCompletionContentPart[]).push(content);
         }
@@ -49,11 +69,7 @@ export function convertToOpenAIMessages(messages: Message[]): ChatCompletionMess
     } else if (message.role === "tool") {
       for (const content of message.content) {
         if (content.type === "tool_result") {
-          openaiMessages.push({
-            role: "tool",
-            tool_call_id: content.tool_use_id,
-            content: content.content,
-          });
+          openaiMessages.push(openaiToolMessage(content.tool_use_id, content.content));
         }
       }
     }
@@ -70,30 +86,21 @@ export function parseAssistantMessage(
   message: ChatCompletionMessage & { reasoning_content?: string },
   usage?: TokenUsage,
 ): AssistantMessage {
-  const result: AssistantMessage = {
-    role: "assistant",
-    content: [],
-    usage,
-  };
+  const content: AssistantMessageContent = [];
   if (typeof message.reasoning_content === "string") {
-    result.content.push({ type: "thinking", thinking: message.reasoning_content });
+    content.push(createThinkingContent(message.reasoning_content));
   }
   if (typeof message.content === "string") {
-    result.content.push({ type: "text", text: message.content });
+    content.push(createTextContent(message.content));
   }
   if (message.tool_calls) {
     for (const tool_call of message.tool_calls) {
       if (tool_call.type === "function") {
-        result.content.push({
-          type: "tool_use",
-          id: tool_call.id,
-          name: tool_call.function.name,
-          input: JSON.parse(tool_call.function.arguments),
-        });
+        content.push(createToolUseContent(tool_call.id, tool_call.function.name, JSON.parse(tool_call.function.arguments)));
       }
     }
   }
-  return result;
+  return createAssistantMessageWithContent(content, { usage });
 }
 
 /**

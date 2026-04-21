@@ -1,6 +1,6 @@
 import type { ChatCompletionChunk } from "openai/resources";
 
-import type { AssistantMessage, AssistantMessageContent, TokenUsage } from "@/foundation";
+import { createAssistantMessageWithContent, createTextContent, createThinkingContent, createToolUseContent, type AssistantMessage, type AssistantMessageContent, type TokenUsage } from "@/foundation";
 
 function toTokenUsage(usage?: {
   prompt_tokens?: number;
@@ -61,10 +61,10 @@ export class StreamAccumulator {
     const content: AssistantMessageContent = [];
 
     if (this.reasoningContent) {
-      content.push({ type: "thinking", thinking: this.reasoningContent });
+      content.push(createThinkingContent(this.reasoningContent));
     }
     if (this.textContent) {
-      content.push({ type: "text", text: this.textContent });
+      content.push(createTextContent(this.textContent));
     }
 
     // Sort by index to preserve order
@@ -85,14 +85,12 @@ export class StreamAccumulator {
       // a half-formed payload. On the final snapshot we fall back to the
       // best-effort empty object to preserve the previous contract.
       if (!parsed && !isFinal) continue;
-      content.push({ type: "tool_use", id: tc.id, name: tc.name, input });
+      content.push(createToolUseContent(tc.id, tc.name, input));
     }
 
-    return {
-      role: "assistant",
-      content,
+    return createAssistantMessageWithContent(content, {
       usage: this.usage,
-      ...(this.usage ? {} : { streaming: true }),
-    };
+      streaming: !this.usage,
+    });
   }
 }
