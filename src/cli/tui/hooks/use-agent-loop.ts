@@ -11,6 +11,7 @@ type AgentLoopState = {
   agent: Agent;
   streaming: boolean;
   messages: NonSystemMessage[];
+  streamingText: string;
   // eslint-disable-next-line no-unused-vars
   onSubmit: (submission: PromptSubmission) => Promise<void>;
   abort: () => void;
@@ -30,6 +31,7 @@ export function AgentLoopProvider({
 }) {
   const [streaming, setStreaming] = useState(false);
   const [messages, setMessages] = useState<NonSystemMessage[]>([]);
+  const [streamingText, setStreamingText] = useState("");
 
   const streamingRef = useRef(streaming);
   const pendingMessagesRef = useRef<NonSystemMessage[]>([]);
@@ -116,6 +118,7 @@ export function AgentLoopProvider({
       }
 
       setStreaming(true);
+      setStreamingText("");
 
       try {
         agent.setRequestedSkillName(requestedSkillName);
@@ -125,18 +128,22 @@ export function AgentLoopProvider({
         const stream = agent.stream(userMessage);
         for await (const event of stream) {
           if (event.type === "message") {
+            // Clear streaming text when a completed message arrives
+            setStreamingText("");
             enqueueMessage(event.message);
+          } else if (event.type === "progress" && event.subtype === "thinking") {
+            setStreamingText(event.text);
           }
-          // progress events intentionally ignored: the UI shows a generic
-          // "Thinking..." shimmer driven by the `streaming` boolean, and
-          // MessageHistory is the single source of truth for tool calls.
+          // tool progress events are handled by StreamingIndicator
         }
+
       } catch (error) {
         if (isAbortError(error)) return;
         throw error;
       } finally {
         agent.setRequestedSkillName(null);
         flushPendingMessages();
+        setStreamingText("");
         setStreaming(false);
       }
     },
@@ -148,11 +155,12 @@ export function AgentLoopProvider({
       agent,
       streaming,
       messages,
+      streamingText,
       onSubmit,
       abort,
       tokenCount,
     }),
-    [abort, agent, messages, onSubmit, streaming, tokenCount],
+    [abort, agent, messages, onSubmit, streaming, streamingText, tokenCount],
   );
 
   return createElement(AgentLoopContext.Provider, { value }, children);
