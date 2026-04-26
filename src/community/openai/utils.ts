@@ -25,7 +25,7 @@ export function convertToOpenAIMessages(messages: Message[]): ChatCompletionMess
       };
       for (const content of message.content) {
         if (content.type === "thinking") {
-          continue;
+          (assistantMessage as unknown as Record<string, unknown>).reasoning_content = content.thinking;
         } else if (content.type === "tool_use") {
           if (!assistantMessage.tool_calls) {
             assistantMessage.tool_calls = [];
