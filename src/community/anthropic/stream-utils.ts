@@ -140,7 +140,7 @@ function blockToContent(block: BlockState): AssistantMessageContent[number] | nu
       // Preserve the signature so it can be sent back in multi-turn conversations.
       thinkingContent._anthropicSignature = block.signature;
     }
-    return thinkingContent as { type: "thinking"; thinking: string };
+    return thinkingContent as never;
   }
   // tool_use
   return { type: "tool_use", id: block.id, name: block.name, input: parseToolInput(block.partialJson) };

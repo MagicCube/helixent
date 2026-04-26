@@ -126,7 +126,10 @@ export interface AgentMiddleware {
    * @param params - Hook parameters.
    * @returns Optional context updates to merge into `context`, or a skip instruction to bypass tool execution.
    */
-  beforeToolUse?: (params: BeforeToolUseParams) => Promise<BeforeToolUseResult>;
+  beforeToolUse?: (params: {
+    agentContext: AgentContext;
+    toolUse: ToolUseContent<Record<string, unknown>>;
+  }) => Promise<BeforeToolUseResult>;
   /**
    * Runs immediately after a tool invocation resolves.
    * @param params - Hook parameters.

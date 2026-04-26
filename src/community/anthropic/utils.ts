@@ -118,7 +118,7 @@ export function parseAssistantMessage(
 
   for (const block of response.content) {
     if (block.type === "text") {
-      result.content.push({ type: "text", text: block.text });
+      result.content.push({ type: "text", text: block.text } as never);
     } else if (block.type === "thinking") {
       // Preserve the signature so it can be sent back in multi-turn conversations.
       // The signature is stored as an extra runtime property on the content object.
@@ -129,14 +129,14 @@ export function parseAssistantMessage(
       if (block.signature) {
         thinkingContent._anthropicSignature = block.signature;
       }
-      result.content.push(thinkingContent as { type: "thinking"; thinking: string });
+      result.content.push(thinkingContent as never);
     } else if (block.type === "tool_use") {
       result.content.push({
         type: "tool_use",
         id: block.id,
         name: block.name,
-        input: block.input as Record<string, unknown>,
-      });
+        input: block.input,
+      } as never);
     }
   }
 
