@@ -9,6 +9,8 @@ describe("getToolResultPolicy", () => {
       includeData: false,
       maxStringLength: 1000,
       uiSummaryOnly: true,
+      maxDataItems: 10,
+      maxDataTextLength: 400,
     });
   });
 
@@ -17,6 +19,8 @@ describe("getToolResultPolicy", () => {
       preferSummaryOnly: false,
       includeData: true,
       maxStringLength: 12000,
+      maxDataItems: 50,
+      maxDataTextLength: 12000,
     });
   });
 
@@ -25,6 +29,8 @@ describe("getToolResultPolicy", () => {
       preferSummaryOnly: false,
       includeData: true,
       maxStringLength: 4000,
+      maxDataItems: 20,
+      maxDataTextLength: 1000,
     });
   });
 });

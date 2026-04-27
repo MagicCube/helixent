@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { formatToolResultForMessage, inferToolErrorKind, normalizeToolResult } from "../tool-result-runtime";
+import { buildToolResultEnvelope, formatToolResultForMessage, inferToolErrorKind, normalizeToolResult } from "../tool-result-runtime";
 
 describe("inferToolErrorKind", () => {
   test("maps common tool error code families", () => {
@@ -59,6 +59,33 @@ describe("normalizeToolResult", () => {
       ok: true,
       summary: "done",
       data: "done",
+    });
+  });
+});
+
+
+describe("buildToolResultEnvelope", () => {
+  test("returns normalized result alongside transcript text", () => {
+    const envelope = buildToolResultEnvelope({
+      toolName: "grep_search",
+      result: {
+        ok: false,
+        summary: "Failed to run rg",
+        error: "Failed to run rg",
+        code: "RG_NOT_FOUND",
+      },
+    });
+
+    expect(envelope.normalized).toMatchObject({
+      ok: false,
+      code: "RG_NOT_FOUND",
+      errorKind: "environment_missing",
+    });
+    expect(JSON.parse(envelope.transcript)).toEqual({
+      ok: false,
+      summary: "Failed to run rg",
+      error: "Failed to run rg",
+      code: "RG_NOT_FOUND",
     });
   });
 });
@@ -133,6 +160,25 @@ describe("formatToolResultForMessage", () => {
       summary: "Failed to run rg",
       error: "Failed to run rg",
       code: "RG_NOT_FOUND",
+    });
+  });
+
+  test("compacts oversized structured data before transcript serialization", () => {
+    const formatted = formatToolResultForMessage({
+      toolName: "grep_search",
+      result: {
+        ok: true,
+        summary: "Found 40 matches for foo",
+        data: {
+          matches: Array.from({ length: 20 }, (_, i) => `match-${i}`),
+          content: "x".repeat(5000),
+        },
+      },
+    });
+
+    expect(JSON.parse(formatted)).toEqual({
+      ok: true,
+      summary: "Found 40 matches for foo",
     });
   });
 
