@@ -1,5 +1,6 @@
 import type { StructuredToolError, StructuredToolResult, StructuredToolSuccess } from "@/foundation";
 
+import { compactTranscriptPayload } from "./tool-compaction";
 import { getToolResultPolicy } from "./tool-result-policy";
 
 export type ToolErrorKind =
@@ -20,6 +21,11 @@ export type NormalizedToolError = StructuredToolError & {
 };
 
 export type NormalizedToolResult = NormalizedToolSuccess | NormalizedToolError;
+
+export type ToolResultEnvelope = {
+  normalized: NormalizedToolResult;
+  transcript: string;
+};
 
 export function inferToolErrorKind(code?: string): ToolErrorKind {
   if (!code) return "unknown";
@@ -97,49 +103,46 @@ export function normalizeToolResult(result: unknown): NormalizedToolResult {
   };
 }
 
-export function formatToolResultForMessage({ toolName, result }: { toolName: string; result: unknown }): string {
+export function buildToolResultEnvelope({ toolName, result }: { toolName: string; result: unknown }): ToolResultEnvelope {
   if (toolName === "read_file" && typeof result === "string") {
-    return result;
+    return {
+      normalized: {
+        ok: true,
+        summary: truncateSummary(result),
+        data: result,
+        raw: result,
+      },
+      transcript: result,
+    };
   }
 
   const normalized = normalizeToolResult(result);
   const policy = getToolResultPolicy(toolName);
 
-  if (!normalized.ok) {
-    return stringifyWithinLimit(
-      {
-        ok: false,
-        summary: normalized.summary,
-        error: normalized.error,
-        ...(normalized.code ? { code: normalized.code } : {}),
-        ...(normalized.details ? { details: normalized.details } : {}),
-      },
+  const compacted = compactTranscriptPayload({ toolName, normalized, policy });
+
+  return {
+    normalized,
+    transcript: stringifyWithinLimit(
+      compacted,
       policy.maxStringLength,
-      {
-        ok: false,
-        summary: truncateSummary(normalized.summary),
-        error: truncateSummary(normalized.error),
-        ...(normalized.code ? { code: normalized.code } : {}),
-      },
-    );
-  }
+      compacted.ok
+        ? {
+          ok: true,
+          summary: truncateSummary(compacted.summary),
+        }
+        : {
+          ok: false,
+          summary: truncateSummary(compacted.summary),
+          error: truncateSummary(compacted.error),
+          ...(compacted.code ? { code: compacted.code } : {}),
+        },
+    ),
+  };
+}
 
-  if (policy.preferSummaryOnly || !policy.includeData) {
-    return JSON.stringify({ ok: true, summary: truncateSummary(normalized.summary) } satisfies StructuredToolResult);
-  }
-
-  return stringifyWithinLimit(
-    {
-      ok: true,
-      summary: normalized.summary,
-      ...(normalized.data !== undefined ? { data: normalized.data } : {}),
-    },
-    policy.maxStringLength,
-    {
-      ok: true,
-      summary: truncateSummary(normalized.summary),
-    },
-  );
+export function formatToolResultForMessage({ toolName, result }: { toolName: string; result: unknown }): string {
+  return buildToolResultEnvelope({ toolName, result }).transcript;
 }
 
 function stringifyValue(value: unknown) {

@@ -12,7 +12,10 @@ import type {
 import type { AgentEvent } from "./agent-event";
 import type { AgentMiddleware } from "./agent-middleware";
 import type { SkillFrontmatter } from "./skills/types";
-import { formatToolResultForMessage } from "./tool-result-runtime";
+import { buildRecentToolObservation } from "./tool-observation";
+import { getToolRecoveryHint } from "./tool-recovery-policy";
+import { buildToolResultEnvelope } from "./tool-result-runtime";
+import { appendToolTrace, createToolInputSignature, createToolTraceState } from "./tool-trace";
 
 /**
  * A context that is used to invoke a React agent.
@@ -49,6 +52,7 @@ export class Agent {
   private readonly _context: AgentContext;
   private _streaming = false;
   private _abortController: AbortController | null = null;
+  private _toolTrace = createToolTraceState();
 
   readonly name?: string;
   readonly model: Model;
@@ -143,6 +147,7 @@ export class Agent {
     }
 
     this._abortController = new AbortController();
+    this._toolTrace = createToolTraceState();
     this._appendMessage(message);
     await this._beforeAgentRun();
     this._streaming = true;
@@ -160,7 +165,7 @@ export class Agent {
           return;
         }
 
-        yield* this._act(toolUses);
+        yield* this._act(step, toolUses);
         await this._afterAgentStep(step);
       }
       throw new Error("Maximum number of steps reached");
@@ -179,7 +184,7 @@ export class Agent {
 
   private async *_think(): AsyncGenerator<AgentEvent, AssistantMessage> {
     const modelContext: ModelContext = {
-      prompt: this.prompt,
+      prompt: this._buildPromptWithToolObservation(),
       messages: this.messages,
       tools: this.tools,
       signal: this._abortController?.signal,
@@ -204,6 +209,26 @@ export class Agent {
     return latest;
   }
 
+
+  private _buildPromptWithToolObservation() {
+    const observation = buildRecentToolObservation({
+      state: this._toolTrace,
+      getRecoveryHint: (record) => getToolRecoveryHint({
+        toolName: record.toolName,
+        errorKind: record.errorKind,
+        code: record.code,
+      }),
+    });
+
+    if (!observation) {
+      return this.prompt;
+    }
+
+    return `${this.prompt}
+
+${observation}`;
+  }
+
   private _deriveProgress(snapshot: AssistantMessage): AgentEvent {
     const toolUses = snapshot.content.filter(
       (c): c is ToolUseContent => c.type === "tool_use",
@@ -219,7 +244,7 @@ export class Agent {
     return message.content.filter((content): content is ToolUseContent => content.type === "tool_use");
   }
 
-  private async *_act(toolUses: ToolUseContent[]): AsyncGenerator<AgentEvent> {
+  private async *_act(step: number, toolUses: ToolUseContent[]): AsyncGenerator<AgentEvent> {
     const signal = this._abortController?.signal;
     const pending = toolUses.map(async (toolUse, index) => {
       try {
@@ -227,14 +252,14 @@ export class Agent {
         if (!tool) throw new Error(`Tool ${toolUse.name} not found`);
         const beforeResult = await this._beforeToolUse(toolUse);
         if (beforeResult.skip) {
-          return { index, toolUseId: toolUse.id, toolName: toolUse.name, result: beforeResult.result };
+          return { index, toolUseId: toolUse.id, toolName: toolUse.name, toolInput: toolUse.input, result: beforeResult.result };
         }
         const result = await tool.invoke(toolUse.input, signal);
         await this._afterToolUse(toolUse, result);
-        return { index, toolUseId: toolUse.id, toolName: toolUse.name, result };
+        return { index, toolUseId: toolUse.id, toolName: toolUse.name, toolInput: toolUse.input, result };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        return { index, toolUseId: toolUse.id, toolName: toolUse.name, result: `Error: ${message}` };
+        return { index, toolUseId: toolUse.id, toolName: toolUse.name, toolInput: toolUse.input, result: `Error: ${message}` };
       }
     });
 
@@ -256,13 +281,39 @@ export class Agent {
         : Promise.race(candidates)))!;
       remaining.delete(resolved.index);
 
+      const envelope = buildToolResultEnvelope({ toolName: resolved.toolName, result: resolved.result });
+      const traceEntry = appendToolTrace(this._toolTrace, {
+        step,
+        toolName: resolved.toolName,
+        toolUseId: resolved.toolUseId,
+        inputSignature: createToolInputSignature(resolved.toolInput),
+        ok: envelope.normalized.ok,
+        summary: envelope.normalized.summary,
+        ...(envelope.normalized.ok ? {} : {
+          ...(envelope.normalized.code ? { code: envelope.normalized.code } : {}),
+          errorKind: envelope.normalized.errorKind,
+        }),
+      });
+
+      const recoveryHint = envelope.normalized.ok
+        ? null
+        : getToolRecoveryHint({
+          toolName: resolved.toolName,
+          errorKind: traceEntry.errorKind,
+          code: traceEntry.code,
+        });
+
       const toolMessage: ToolMessage = {
         role: "tool",
         content: [
           {
             type: "tool_result",
             tool_use_id: resolved.toolUseId,
-            content: formatToolResultForMessage({ toolName: resolved.toolName, result: resolved.result }),
+            content: recoveryHint && traceEntry.repeatedFailure && recoveryHint.shouldSuppressImmediateRetry
+              ? `${envelope.transcript}
+
+Recovery hint: ${recoveryHint.message}`
+              : envelope.transcript,
           },
         ],
       };

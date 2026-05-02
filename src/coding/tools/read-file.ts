@@ -2,7 +2,7 @@ import z from "zod";
 
 import { defineTool } from "@/foundation";
 
-import { errorToolResult, okToolResult } from "./tool-result";
+import { errorToolResult } from "./tool-result";
 import { ensureAbsolutePath, truncateText } from "./tool-utils";
 
 const DEFAULT_MAX_CHARS = 12000;
