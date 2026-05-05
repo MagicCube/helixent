@@ -59,6 +59,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.87.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "commander": "^14.0.3",
     "gray-matter": "^4.0.3",
     "ink": "^6.8.0",
