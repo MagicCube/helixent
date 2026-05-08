@@ -95,7 +95,12 @@ export function AgentLoopProvider({
         agent.messages.push(msg);
       }
       flushPendingMessages();
-      setMessages(restored);
+      // Only show a summary in the UI; full history stays in agent.messages for context
+      const summaryMsg: AssistantMessage = {
+        role: "assistant",
+        content: [{ type: "text", text: `Resumed session with ${restored.length} messages.` }],
+      };
+      setMessages([summaryMsg]);
     },
     [agent, flushPendingMessages],
   );
