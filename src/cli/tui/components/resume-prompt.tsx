@@ -1,5 +1,5 @@
 import { Box, Text, useInput } from "ink";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
 import type { SessionInfo } from "@/agent/transcript";
 
@@ -19,7 +19,10 @@ export function ResumePrompt({
   sessions: SessionInfo[];
   onSelect: (session: SessionInfo | null) => void;
 }) {
-  const options = [...sessions.map((s) => ({ type: "session" as const, session: s })), { type: "cancel" as const }];
+  const options = useMemo(
+    () => [...sessions.map((s) => ({ type: "session" as const, session: s })), { type: "cancel" as const }],
+    [sessions],
+  );
   const [index, setIndex] = useState(0);
 
   useInput((_input, key) => {

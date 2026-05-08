@@ -95,13 +95,10 @@ export function AgentLoopProvider({
         agent.messages.push(msg);
       }
       flushPendingMessages();
-      // Show a summary message followed by the last complete turn for context
       const summaryMsg: AssistantMessage = {
         role: "assistant",
         content: [{ type: "text", text: `Resumed session with ${restored.length} messages.` }],
       };
-      // Find the last assistant message with text content (the actual reply)
-      // then include from the preceding user message through that reply
       const recentMessages = getLastCompleteTurn(restored);
       setMessages([summaryMsg, ...recentMessages]);
     },
