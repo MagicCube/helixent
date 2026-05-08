@@ -133,7 +133,12 @@ export function AgentLoopProvider({
         }
       } catch (error) {
         if (isAbortError(error)) return;
-        throw error;
+        // Display API/model errors as assistant messages instead of crashing
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        enqueueMessage({
+          role: "assistant",
+          content: [{ type: "text", text: `Error: ${errorMessage}\n\nYou can try again.` }],
+        });
       } finally {
         agent.setRequestedSkillName(null);
         flushPendingMessages();
