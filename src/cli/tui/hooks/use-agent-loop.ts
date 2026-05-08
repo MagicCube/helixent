@@ -244,33 +244,21 @@ function clearTerminal() {
 }
 
 /**
- * Extract the last complete turn (user question + all assistant responses)
- * from restored messages, so the user can see where they left off.
+ * Extract the last user question and the last assistant reply from
+ * the restored messages. Shows where the user left off.
  */
 function getLastCompleteTurn(messages: NonSystemMessage[]): NonSystemMessage[] {
-  // Walk backwards to find the last assistant message with text content
-  let lastAssistantIdx = -1;
+  // Find the last user message
+  let lastUserIdx = -1;
   for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i]!;
-    if (msg.role === "assistant" && msg.content.some((c) => c.type === "text")) {
-      lastAssistantIdx = i;
-      break;
-    }
-  }
-  if (lastAssistantIdx === -1) {
-    // No text reply found, just return last 2 messages
-    return messages.slice(-2);
-  }
-
-  // Find the user message that started this turn
-  let turnStartIdx = lastAssistantIdx;
-  for (let i = lastAssistantIdx - 1; i >= 0; i--) {
     if (messages[i]!.role === "user") {
-      turnStartIdx = i;
+      lastUserIdx = i;
       break;
     }
   }
 
-  // Return from the user question through all messages up to and including the assistant reply
-  return messages.slice(turnStartIdx, lastAssistantIdx + 1);
+  if (lastUserIdx === -1) return messages.slice(-2);
+
+  // Return the last user message and everything after it (the assistant's response)
+  return messages.slice(lastUserIdx);
 }
