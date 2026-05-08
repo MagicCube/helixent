@@ -33,8 +33,11 @@ const args = process.argv.slice(2);
 if (args.length > 0 && !args.some((a) => a.startsWith("--resume"))) {
   await program.parseAsync(process.argv);
 } else {
-  program.parse(process.argv);
-  const opts = program.opts<{ resume?: string | true }>();
+  // Extract --resume option manually to avoid Commander showing help and exiting
+  const resumeIdx = args.findIndex((a) => a === "--resume");
+  const resumeOpt: string | true | undefined = resumeIdx >= 0
+    ? (args[resumeIdx + 1] && !args[resumeIdx + 1]!.startsWith("-") ? args[resumeIdx + 1] : true)
+    : undefined;
 
   console.info();
   await validateIntegrity();
@@ -79,10 +82,10 @@ if (args.length > 0 && !args.some((a) => a.startsWith("--resume"))) {
 
   // Load resume messages if --resume was passed
   let resumeMessages: NonSystemMessage[] = [];
-  if (opts.resume) {
+  if (resumeOpt) {
     const cwd = process.cwd();
-    if (typeof opts.resume === "string") {
-      const sessionPath = join(getProjectDir(cwd), `${opts.resume}.jsonl`);
+    if (typeof resumeOpt === "string") {
+      const sessionPath = join(getProjectDir(cwd), `${resumeOpt}.jsonl`);
       resumeMessages = loadTranscript(sessionPath);
     } else {
       const latestPath = getLatestSessionPath(cwd);
