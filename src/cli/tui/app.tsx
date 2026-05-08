@@ -10,6 +10,7 @@ import { Footer } from "./components/footer";
 import { Header } from "./components/header";
 import { InputBox } from "./components/input-box";
 import { MessageHistoryItem } from "./components/message-history";
+import { ResumePrompt } from "./components/resume-prompt";
 import { StreamingIndicator } from "./components/streaming-indicator";
 import { TodoPanel } from "./components/todo-panel";
 import { useAgentLoop } from "./hooks/use-agent-loop";
@@ -29,7 +30,7 @@ export function App({
   commands: SlashCommand[];
   supportProjectWideAllow?: boolean;
 }) {
-  const { streaming, messages, onSubmit, abort } = useAgentLoop();
+  const { streaming, messages, onSubmit, abort, resumeRequest, handleResumeSelect } = useAgentLoop();
   const { approvalRequest, respondToApproval } = useApprovalManager();
   const { askUserQuestionRequest, respondWithAnswers } = useAskUserQuestionManager();
   const { latestTodos, todoSnapshots } = useMemo(() => buildTodoViewState(messages), [messages]);
@@ -72,6 +73,8 @@ export function App({
             questions={askUserQuestionRequest.params.questions}
             onSubmit={respondWithAnswers}
           />
+        ) : resumeRequest ? (
+          <ResumePrompt sessions={resumeRequest} onSelect={handleResumeSelect} />
         ) : (
           <InputBox commands={commands} onSubmit={onSubmit} onAbort={abort} />
         )}

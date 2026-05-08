@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 
 import type { Agent } from "@/agent";
 import type { AssistantMessage, NonSystemMessage, UserMessage } from "@/foundation";
+import { listSessions, getProjectDir, loadTranscript } from "@/agent/transcript";
+import type { SessionInfo } from "@/agent/transcript";
 
 import type { PromptSubmission, SlashCommand } from "../command-registry";
 import { formatHelp, resolveBuiltinCommand } from "../command-registry";
@@ -15,6 +17,9 @@ type AgentLoopState = {
   onSubmit: (submission: PromptSubmission) => Promise<void>;
   abort: () => void;
   tokenCount: number;
+  resumeRequest: SessionInfo[] | null;
+  // eslint-disable-next-line no-unused-vars
+  handleResumeSelect: (session: SessionInfo | null) => void;
 };
 
 const AgentLoopContext = createContext<AgentLoopState | null>(null);
@@ -30,6 +35,7 @@ export function AgentLoopProvider({
 }) {
   const [streaming, setStreaming] = useState(false);
   const [messages, setMessages] = useState<NonSystemMessage[]>([]);
+  const [resumeRequest, setResumeRequest] = useState<SessionInfo[] | null>(null);
 
   const streamingRef = useRef(streaming);
   const pendingMessagesRef = useRef<NonSystemMessage[]>([]);
@@ -79,6 +85,21 @@ export function AgentLoopProvider({
     return calculateTotalTokens(messages);
   }, [messages]);
 
+  const handleResumeSelect = useCallback(
+    (session: SessionInfo | null) => {
+      setResumeRequest(null);
+      if (!session) return;
+      agent.clearMessages();
+      const restored = loadTranscript(session.path);
+      for (const msg of restored) {
+        agent.messages.push(msg);
+      }
+      flushPendingMessages();
+      setMessages(restored);
+    },
+    [agent, flushPendingMessages],
+  );
+
   const onSubmit = useCallback(
     async (submission: PromptSubmission) => {
       const { text, requestedSkillName } = submission;
@@ -112,6 +133,20 @@ export function AgentLoopProvider({
           ],
         };
         setMessages((prev) => [...prev, userMessage, helpMessage]);
+        return;
+      }
+
+      if (invocation?.name === "resume") {
+        const sessions = listSessions(getProjectDir(process.cwd()));
+        if (sessions.length === 0) {
+          const noSessionMsg: AssistantMessage = {
+            role: "assistant",
+            content: [{ type: "text", text: "No previous sessions found." }],
+          };
+          setMessages((prev) => [...prev, noSessionMsg]);
+        } else {
+          setResumeRequest(sessions);
+        }
         return;
       }
 
@@ -156,8 +191,10 @@ export function AgentLoopProvider({
       onSubmit,
       abort,
       tokenCount,
+      resumeRequest,
+      handleResumeSelect,
     }),
-    [abort, agent, messages, onSubmit, streaming, tokenCount],
+    [abort, agent, messages, onSubmit, streaming, tokenCount, resumeRequest, handleResumeSelect],
   );
 
   return createElement(AgentLoopContext.Provider, { value }, children);
