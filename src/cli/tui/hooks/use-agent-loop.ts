@@ -95,13 +95,14 @@ export function AgentLoopProvider({
         agent.messages.push(msg);
       }
       flushPendingMessages();
-      // Show a summary message followed by the last few messages for context
+      // Show a summary message followed by the last complete turn for context
       const summaryMsg: AssistantMessage = {
         role: "assistant",
         content: [{ type: "text", text: `Resumed session with ${restored.length} messages.` }],
       };
-      const recentCount = Math.min(restored.length, 4);
-      const recentMessages = restored.slice(-recentCount);
+      // Find the last assistant message with text content (the actual reply)
+      // then include from the preceding user message through that reply
+      const recentMessages = getLastCompleteTurn(restored);
       setMessages([summaryMsg, ...recentMessages]);
     },
     [agent, flushPendingMessages],
@@ -240,4 +241,36 @@ function isAbortError(error: unknown): boolean {
 function clearTerminal() {
   if (!process.stdout.isTTY) return;
   process.stdout.write("\u001B[2J\u001B[3J\u001B[H");
+}
+
+/**
+ * Extract the last complete turn (user question + all assistant responses)
+ * from restored messages, so the user can see where they left off.
+ */
+function getLastCompleteTurn(messages: NonSystemMessage[]): NonSystemMessage[] {
+  // Walk backwards to find the last assistant message with text content
+  let lastAssistantIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i]!;
+    if (msg.role === "assistant" && msg.content.some((c) => c.type === "text")) {
+      lastAssistantIdx = i;
+      break;
+    }
+  }
+  if (lastAssistantIdx === -1) {
+    // No text reply found, just return last 2 messages
+    return messages.slice(-2);
+  }
+
+  // Find the user message that started this turn
+  let turnStartIdx = lastAssistantIdx;
+  for (let i = lastAssistantIdx - 1; i >= 0; i--) {
+    if (messages[i]!.role === "user") {
+      turnStartIdx = i;
+      break;
+    }
+  }
+
+  // Return from the user question through all messages up to and including the assistant reply
+  return messages.slice(turnStartIdx, lastAssistantIdx + 1);
 }
