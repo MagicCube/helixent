@@ -7,10 +7,11 @@ import { validateIntegrity } from "@/cli/bootstrap";
 import { registerCommands } from "@/cli/commands";
 import { loadConfig } from "@/cli/config";
 import { SettingsLoader, SettingsWriter } from "@/cli/settings";
+import { getLatestSessionPath, getProjectDir, loadTranscript } from "@/agent/transcript";
 import { createCodingAgent, globalApprovalManager, globalAskUserQuestionManager } from "@/coding";
 import { AnthropicModelProvider } from "@/community/anthropic";
 import { OpenAIModelProvider } from "@/community/openai";
-import type { ModelProvider } from "@/foundation";
+import type { ModelProvider, NonSystemMessage } from "@/foundation";
 import { Model } from "@/foundation";
 
 import { App } from "./tui";
@@ -22,15 +23,19 @@ const program = new Command();
 program
   .name(HELIXENT_NAME)
   .description("Helixent — a blue rabbit that writes code")
-  .version(HELIXENT_VERSION, "-v, --version");
+  .version(HELIXENT_VERSION, "-v, --version")
+  .option("--resume [sessionId]", "Resume a previous session");
 
 registerCommands(program);
 
 const args = process.argv.slice(2);
 
-if (args.length > 0) {
+if (args.length > 0 && !args.some((a) => a.startsWith("--resume"))) {
   await program.parseAsync(process.argv);
 } else {
+  program.parse(process.argv);
+  const opts = program.opts<{ resume?: string | true }>();
+
   console.info();
   await validateIntegrity();
 
@@ -71,6 +76,27 @@ if (args.length > 0) {
 
   const settingsLoader = new SettingsLoader();
   const settingsWriter = new SettingsWriter(settingsLoader);
+
+  // Load resume messages if --resume was passed
+  let resumeMessages: NonSystemMessage[] = [];
+  if (opts.resume) {
+    const cwd = process.cwd();
+    if (typeof opts.resume === "string") {
+      const sessionPath = join(getProjectDir(cwd), `${opts.resume}.jsonl`);
+      resumeMessages = loadTranscript(sessionPath);
+    } else {
+      const latestPath = getLatestSessionPath(cwd);
+      if (latestPath) {
+        resumeMessages = loadTranscript(latestPath);
+      }
+    }
+    if (resumeMessages.length > 0) {
+      console.info(`Resuming session with ${resumeMessages.length} messages.`);
+    } else {
+      console.info("No previous session found. Starting fresh.");
+    }
+  }
+
   const agent = await createCodingAgent({
     model,
     skillsDirs,
@@ -82,6 +108,13 @@ if (args.length > 0) {
     },
   });
   const commands: SlashCommand[] = await loadAvailableCommands(skillsDirs);
+
+  // Inject resume messages into agent
+  if (resumeMessages.length > 0) {
+    for (const msg of resumeMessages) {
+      agent.messages.push(msg);
+    }
+  }
 
   render(
     <AgentLoopProvider agent={agent} commands={commands}>
