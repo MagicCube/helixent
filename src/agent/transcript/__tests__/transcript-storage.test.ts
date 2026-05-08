@@ -1,9 +1,9 @@
 import { describe, expect, it, beforeEach, afterEach } from "bun:test";
-import { mkdtempSync, rmSync, readFileSync } from "fs";
+import { mkdtempSync, rmSync, readFileSync, utimesSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
-import { sanitizeCwd, getProjectDir, appendEntry, loadTranscript } from "../transcript-storage";
+import { sanitizeCwd, getProjectDir, appendEntry, loadTranscript, listSessions } from "../transcript-storage";
 
 describe("sanitizeCwd", () => {
   it("replaces path separators and colons with dashes", () => {
@@ -78,5 +78,57 @@ describe("loadTranscript", () => {
   it("returns empty array for non-existent file", () => {
     const messages = loadTranscript(join(tmpDir, "nope.jsonl"));
     expect(messages).toHaveLength(0);
+  });
+});
+
+describe("listSessions", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "transcript-test-"));
+  });
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true });
+  });
+
+  it("returns empty array when no sessions exist", () => {
+    const sessions = listSessions(tmpDir);
+    expect(sessions).toHaveLength(0);
+  });
+
+  it("returns sessions sorted by mtime descending", () => {
+    const msg = { role: "user" as const, content: [{ type: "text" as const, text: "hi" }] };
+    const path1 = join(tmpDir, "aaa-111.jsonl");
+    const path2 = join(tmpDir, "bbb-222.jsonl");
+    appendEntry(path1, msg);
+    appendEntry(path1, msg);
+    appendEntry(path2, msg);
+    // Force different mtimes
+    const older = new Date(Date.now() - 10000);
+    const newer = new Date(Date.now());
+    utimesSync(path1, older, older);
+    utimesSync(path2, newer, newer);
+
+    const sessions = listSessions(tmpDir);
+    expect(sessions.length).toBeGreaterThanOrEqual(2);
+    expect(sessions[0]!.id).toBe("bbb-222");
+    expect(sessions[0]!.messageCount).toBe(1);
+    expect(sessions[1]!.id).toBe("aaa-111");
+    expect(sessions[1]!.messageCount).toBe(2);
+  });
+
+  it("respects limit parameter", () => {
+    const msg = { role: "user" as const, content: [{ type: "text" as const, text: "hi" }] };
+    appendEntry(join(tmpDir, "a.jsonl"), msg);
+    appendEntry(join(tmpDir, "b.jsonl"), msg);
+    appendEntry(join(tmpDir, "c.jsonl"), msg);
+
+    const sessions = listSessions(tmpDir, 2);
+    expect(sessions).toHaveLength(2);
+  });
+
+  it("returns empty array for non-existent directory", () => {
+    const sessions = listSessions(join(tmpDir, "nonexistent"));
+    expect(sessions).toHaveLength(0);
   });
 });

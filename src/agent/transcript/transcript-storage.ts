@@ -50,6 +50,37 @@ export function appendEntry(filePath: string, message: NonSystemMessage): void {
   appendFileSync(filePath, JSON.stringify(entry) + "\n", { mode: 0o600 });
 }
 
+export type SessionInfo = {
+  id: string;
+  path: string;
+  mtime: Date;
+  messageCount: number;
+};
+
+/**
+ * List available sessions for a project directory, sorted by most recent first.
+ */
+export function listSessions(projectDir: string, limit = 5): SessionInfo[] {
+  if (!existsSync(projectDir)) return [];
+
+  return readdirSync(projectDir)
+    .filter((f) => f.endsWith(".jsonl"))
+    .map((f) => {
+      const filePath = join(projectDir, f);
+      const stat = statSync(filePath);
+      const content = readFileSync(filePath, "utf-8");
+      const lineCount = content.split("\n").filter(Boolean).length;
+      return {
+        id: f.replace(".jsonl", ""),
+        path: filePath,
+        mtime: stat.mtime,
+        messageCount: lineCount,
+      };
+    })
+    .sort((a, b) => b.mtime.getTime() - a.mtime.getTime())
+    .slice(0, limit);
+}
+
 /**
  * Load all messages from a transcript file.
  */
