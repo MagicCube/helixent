@@ -3,7 +3,7 @@ import { join } from "path";
 import { Agent } from "@/agent";
 import { createSkillsMiddleware } from "@/agent/skills/skills-middleware";
 import { createTodoSystem } from "@/agent/todos/todos";
-import type { Model, NonSystemMessage, ToolUseContent } from "@/foundation";
+import type { Model, NonSystemMessage, Tool, ToolUseContent } from "@/foundation";
 
 import {
   type ApprovalDecision,
@@ -35,6 +35,7 @@ export async function createCodingAgent({
   askUser,
   askUserQuestion,
   approvalPersistence,
+  extraTools,
 }: {
   model: Model;
   cwd?: string;
@@ -44,6 +45,8 @@ export async function createCodingAgent({
   // eslint-disable-next-line no-unused-vars
   askUserQuestion?: (params: AskUserQuestionParameters) => Promise<AskUserQuestionResult>;
   approvalPersistence?: ApprovalPersistence;
+  /** Extra tools appended after built-ins (e.g. MCP via `helixent/community/mcp`). Built-in names win if duplicated. */
+  extraTools?: Tool[];
 }) {
   const agentsFile = Bun.file(`${cwd}/AGENTS.md`);
   const messages: NonSystemMessage[] = [];
@@ -114,6 +117,7 @@ Use the given tools and skills to perform parallel/sequential operations and sol
       applyPatchTool,
       todoTool,
       ...(askUserQuestionTool ? [askUserQuestionTool] : []),
+      ...(extraTools ?? []),
     ],
     middlewares,
   });
