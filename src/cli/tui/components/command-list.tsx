@@ -21,9 +21,11 @@ export function CommandList({ commands, selectedIndex }: CommandListProps) {
 
   const { endIndex, startIndex } = getVisibleWindow(commands.length, selectedIndex, MAX_VISIBLE_COMMANDS);
   const visibleCommands = commands.slice(startIndex, endIndex);
+  const commandColumnWidth = getCommandColumnWidth(commands);
   return (
     <Box
       flexDirection="column"
+      width="100%"
       borderStyle="single"
       borderColor={currentTheme.colors.borderColor}
       paddingX={1}
@@ -35,28 +37,30 @@ export function CommandList({ commands, selectedIndex }: CommandListProps) {
       {visibleCommands.map((cmd, visibleIndex) => {
         const index = startIndex + visibleIndex;
         return (
-        <Box key={cmd.name} flexDirection="row">
-          <Text
-            color={index === selectedIndex ? currentTheme.colors.highlightedText : undefined}
-            bold={index === selectedIndex}
-          >
-            {index === selectedIndex ? "❯ " : "  "}
-          </Text>
-          <Text
-            color={index === selectedIndex ? currentTheme.colors.highlightedText : undefined}
-            bold={index === selectedIndex}
-          >
-            /{cmd.name}
-          </Text>
-          <Text dimColor>
-            {" "}
-            [{cmd.type}] {summarizeDescription(cmd.description)}
-          </Text>
-        </Box>
+          <Box key={cmd.name} flexDirection="row">
+            <Box flexShrink={0} width={commandColumnWidth}>
+              <Text
+                color={index === selectedIndex ? currentTheme.colors.highlightedText : undefined}
+                bold={index === selectedIndex}
+              >
+                {index === selectedIndex ? "❯ " : "  "}/{cmd.name}
+              </Text>
+            </Box>
+            <Box flexGrow={1} flexShrink={1}>
+              <Text dimColor>
+                [{cmd.type}] {summarizeDescription(cmd.description)}
+              </Text>
+            </Box>
+          </Box>
         );
       })}
     </Box>
   );
+}
+
+function getCommandColumnWidth(commands: SlashCommand[]): number {
+  const longestCommand = commands.reduce((max, command) => Math.max(max, command.name.length), 0);
+  return longestCommand + 4;
 }
 
 function summarizeDescription(description: string, maxLength = 72): string {
