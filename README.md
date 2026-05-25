@@ -182,7 +182,7 @@ bun run check
 Or run tests only by running:
 
 ```bash
-bun run test
+bun test
 ```
 
 > This is also run automatically by the pre-commit hook. This also causes the committing process a little bit slower,

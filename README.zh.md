@@ -182,7 +182,7 @@ bun run check
 或者仅运行测试：
 
 ```bash
-bun run test
+bun test
 ```
 
 > 这也会由 pre-commit 钩子自动执行。这会让提交过程稍微慢一点，但我们认为这是值得的。毕竟，在一个 AI 主导的 GitHub 宇宙中，我们至少应该能处理好代码质量的"最后一公里"。
