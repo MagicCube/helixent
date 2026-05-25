@@ -56,8 +56,12 @@ describe("StreamAccumulator (Anthropic)", () => {
     } as never);
 
     const snapshot = acc.snapshot();
-    const thinking = snapshot.content[0] as unknown as { type: string; thinking: string; _anthropicSignature?: string };
-    expect(thinking._anthropicSignature).toBe("sig_updated");
+    const thinking = snapshot.content[0] as unknown as {
+      type: string;
+      thinking: string;
+      providerData?: { _anthropicSignature?: string };
+    };
+    expect(thinking.providerData?._anthropicSignature).toBe("sig_updated");
   });
 
   test("accumulates tool_use input JSON progressively", () => {

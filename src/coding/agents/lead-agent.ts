@@ -3,7 +3,7 @@ import { join } from "path";
 import { Agent } from "@/agent";
 import { createSkillsMiddleware } from "@/agent/skills/skills-middleware";
 import { createTodoSystem } from "@/agent/todos/todos";
-import type { Model, NonSystemMessage, ToolUseContent } from "@/foundation";
+import { createUserMessage, type Model, type NonSystemMessage, type ToolUseContent } from "@/foundation";
 
 import {
   type ApprovalDecision,
@@ -49,15 +49,9 @@ export async function createCodingAgent({
   const messages: NonSystemMessage[] = [];
   if (await agentsFile.exists()) {
     const agentsFileContent = await agentsFile.text();
-    messages.push({
-      role: "user",
-      content: [
-        {
-          type: "text",
-          text: "> The `AGENTS.md` file has been automatically loaded. Here is the content:\n\n" + agentsFileContent,
-        },
-      ],
-    });
+    messages.push(
+      createUserMessage("> The `AGENTS.md` file has been automatically loaded. Here is the content:\n\n" + agentsFileContent),
+    );
   }
   const { tool: todoTool, middleware: todoMiddleware } = createTodoSystem();
 

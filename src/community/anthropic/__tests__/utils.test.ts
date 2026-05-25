@@ -152,10 +152,14 @@ describe("parseAssistantMessage (Anthropic)", () => {
       usage: { input_tokens: 10, output_tokens: 5 },
     } as never);
     expect(result.content).toHaveLength(1);
-    const thinking = result.content[0] as unknown as { type: string; thinking: string; _anthropicSignature?: string };
+    const thinking = result.content[0] as unknown as {
+      type: string;
+      thinking: string;
+      providerData?: { _anthropicSignature?: string };
+    };
     expect(thinking.type).toBe("thinking");
     expect(thinking.thinking).toBe("hmm");
-    expect(thinking._anthropicSignature).toBe("sig_123");
+    expect(thinking.providerData?._anthropicSignature).toBe("sig_123");
   });
 
   test("parses tool_use blocks", () => {
