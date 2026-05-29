@@ -7,10 +7,12 @@ describe("resolveBuiltinCommand", () => {
     expect(resolveBuiltinCommand("/clear")).toEqual({ name: "clear", args: "" });
     expect(resolveBuiltinCommand("/exit")).toEqual({ name: "exit", args: "" });
     expect(resolveBuiltinCommand("/help")).toEqual({ name: "help", args: "" });
+    expect(resolveBuiltinCommand("/model")).toEqual({ name: "model", args: "" });
   });
 
   it("captures trailing args after a builtin", () => {
     expect(resolveBuiltinCommand("/help clear")).toEqual({ name: "help", args: "clear" });
+    expect(resolveBuiltinCommand("/model deepseek-v4-pro")).toEqual({ name: "model", args: "deepseek-v4-pro" });
     expect(resolveBuiltinCommand("/help   skill-creator")).toEqual({
       name: "help",
       args: "skill-creator",
@@ -39,6 +41,7 @@ describe("formatHelp", () => {
     expect(text).toContain("Available slash commands");
     expect(text).toContain("/clear");
     expect(text).toContain("/help");
+    expect(text).toContain("/model");
     expect(text).toContain("/skill-creator");
     expect(text).toContain("Create new skills");
   });
@@ -48,6 +51,13 @@ describe("formatHelp", () => {
     expect(text).toContain("/clear");
     expect(text).toContain("Built-in command");
     expect(text).toContain("Clear the current conversation history");
+  });
+
+  it("renders details for the model command", () => {
+    const text = formatHelp(commands, "model");
+    expect(text).toContain("/model");
+    expect(text).toContain("Built-in command");
+    expect(text).toContain("Choose the model");
   });
 
   it("tolerates a leading slash and case in target", () => {

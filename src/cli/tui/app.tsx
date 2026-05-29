@@ -10,6 +10,7 @@ import { Footer } from "./components/footer";
 import { Header } from "./components/header";
 import { InputBox } from "./components/input-box";
 import { MessageHistoryItem } from "./components/message-history";
+import { ModelSelectionPrompt } from "./components/model-selection-prompt";
 import { StreamingIndicator } from "./components/streaming-indicator";
 import { TodoPanel } from "./components/todo-panel";
 import { useAgentLoop } from "./hooks/use-agent-loop";
@@ -29,7 +30,7 @@ export function App({
   commands: SlashCommand[];
   supportProjectWideAllow?: boolean;
 }) {
-  const { streaming, messages, onSubmit, abort } = useAgentLoop();
+  const { streaming, messages, onSubmit, abort, modelPicker, selectModel, cancelModelSelection } = useAgentLoop();
   const { approvalRequest, respondToApproval } = useApprovalManager();
   const { askUserQuestionRequest, respondWithAnswers } = useAskUserQuestionManager();
   const { latestTodos, todoSnapshots } = useMemo(() => buildTodoViewState(messages), [messages]);
@@ -57,7 +58,7 @@ export function App({
             todoSnapshots={todoSnapshots}
           />
         )}
-        {approvalRequest || askUserQuestionRequest ? null : (
+        {approvalRequest || askUserQuestionRequest || modelPicker ? null : (
           <StreamingIndicator streaming={streaming} nextTodo={nextTodo} />
         )}
         {!hideTodos && <TodoPanel todos={latestTodos} />}
@@ -71,6 +72,14 @@ export function App({
           <AskUserQuestionPrompt
             questions={askUserQuestionRequest.params.questions}
             onSubmit={respondWithAnswers}
+          />
+        ) : modelPicker ? (
+          <ModelSelectionPrompt
+            models={modelPicker.models}
+            currentModelName={modelPicker.currentModelName}
+            defaultModelName={modelPicker.defaultModelName}
+            onSelect={selectModel}
+            onCancel={cancelModelSelection}
           />
         ) : (
           <InputBox commands={commands} onSubmit={onSubmit} onAbort={abort} />

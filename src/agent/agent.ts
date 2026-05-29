@@ -47,11 +47,11 @@ export interface AgentOptions {
  */
 export class Agent {
   private readonly _context: AgentContext;
+  private _model: Model;
   private _streaming = false;
   private _abortController: AbortController | null = null;
 
   readonly name?: string;
-  readonly model: Model;
   readonly options: Required<AgentOptions>;
   readonly middlewares: AgentMiddleware[];
 
@@ -80,7 +80,7 @@ export class Agent {
     maxSteps?: number;
   }) {
     this.name = name;
-    this.model = model;
+    this._model = model;
     this._context = {
       prompt,
       tools,
@@ -95,6 +95,20 @@ export class Agent {
    */
   get messages() {
     return this._context.messages;
+  }
+
+  /**
+   * Gets the model used for future agent steps.
+   */
+  get model() {
+    return this._model;
+  }
+
+  /**
+   * Sets the model used for future agent steps.
+   */
+  setModel(model: Model) {
+    this._model = model;
   }
 
   /**
@@ -187,7 +201,7 @@ export class Agent {
     await this._beforeModel(modelContext);
 
     let latest: AssistantMessage | null = null;
-    for await (const snapshot of this.model.stream(modelContext)) {
+    for await (const snapshot of this._model.stream(modelContext)) {
       latest = snapshot;
       if (snapshot.streaming) {
         yield this._deriveProgress(snapshot);
@@ -359,4 +373,3 @@ export class Agent {
     }
   }
 }
-
