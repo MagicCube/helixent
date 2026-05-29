@@ -2,6 +2,8 @@ import { createContext, createElement, useCallback, useContext, useEffect, useMe
 import type { ReactNode } from "react";
 
 import type { Agent } from "@/agent";
+import { listSessions, getProjectDir, loadTranscript } from "@/agent/transcript";
+import type { SessionInfo } from "@/agent/transcript";
 import type { AssistantMessage, NonSystemMessage, UserMessage } from "@/foundation";
 
 import type { PromptSubmission, SlashCommand } from "../command-registry";
@@ -16,6 +18,9 @@ type AgentLoopState = {
   onSubmit: (submission: PromptSubmission) => Promise<void>;
   abort: () => void;
   tokenUsage: TokenUsageSummary;
+  resumeRequest: SessionInfo[] | null;
+  // eslint-disable-next-line no-unused-vars
+  handleResumeSelect: (session: SessionInfo | null) => void;
 };
 
 const AgentLoopContext = createContext<AgentLoopState | null>(null);
@@ -31,6 +36,7 @@ export function AgentLoopProvider({
 }) {
   const [streaming, setStreaming] = useState(false);
   const [messages, setMessages] = useState<NonSystemMessage[]>([]);
+  const [resumeRequest, setResumeRequest] = useState<SessionInfo[] | null>(null);
 
   const streamingRef = useRef(streaming);
   const pendingMessagesRef = useRef<NonSystemMessage[]>([]);
@@ -80,6 +86,26 @@ export function AgentLoopProvider({
     return calculateTokenUsage(messages);
   }, [messages]);
 
+  const handleResumeSelect = useCallback(
+    (session: SessionInfo | null) => {
+      setResumeRequest(null);
+      if (!session) return;
+      agent.clearMessages();
+      const restored = loadTranscript(session.path);
+      for (const msg of restored) {
+        agent.messages.push(msg);
+      }
+      flushPendingMessages();
+      const summaryMsg: AssistantMessage = {
+        role: "assistant",
+        content: [{ type: "text", text: `Resumed session with ${restored.length} messages.` }],
+      };
+      const recentMessages = getLastCompleteTurn(restored);
+      setMessages([summaryMsg, ...recentMessages]);
+    },
+    [agent, flushPendingMessages],
+  );
+
   const onSubmit = useCallback(
     async (submission: PromptSubmission) => {
       const { text, requestedSkillName } = submission;
@@ -113,6 +139,20 @@ export function AgentLoopProvider({
           ],
         };
         setMessages((prev) => [...prev, userMessage, helpMessage]);
+        return;
+      }
+
+      if (invocation?.name === "resume") {
+        const sessions = listSessions(getProjectDir(process.cwd()));
+        if (sessions.length === 0) {
+          const noSessionMsg: AssistantMessage = {
+            role: "assistant",
+            content: [{ type: "text", text: "No previous sessions found." }],
+          };
+          setMessages((prev) => [...prev, noSessionMsg]);
+        } else {
+          setResumeRequest(sessions);
+        }
         return;
       }
 
@@ -157,8 +197,10 @@ export function AgentLoopProvider({
       onSubmit,
       abort,
       tokenUsage,
+      resumeRequest,
+      handleResumeSelect,
     }),
-    [abort, agent, messages, onSubmit, streaming, tokenUsage],
+    [abort, agent, messages, onSubmit, streaming, tokenUsage, resumeRequest, handleResumeSelect],
   );
 
   return createElement(AgentLoopContext.Provider, { value }, children);
@@ -186,4 +228,24 @@ function isAbortError(error: unknown): boolean {
 function clearTerminal() {
   if (!process.stdout.isTTY) return;
   process.stdout.write("\u001B[2J\u001B[3J\u001B[H");
+}
+
+/**
+ * Extract the last user question and the last assistant reply from
+ * the restored messages. Shows where the user left off.
+ */
+function getLastCompleteTurn(messages: NonSystemMessage[]): NonSystemMessage[] {
+  // Find the last user message
+  let lastUserIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i]!.role === "user") {
+      lastUserIdx = i;
+      break;
+    }
+  }
+
+  if (lastUserIdx === -1) return messages.slice(-2);
+
+  // Return the last user message and everything after it (the assistant's response)
+  return messages.slice(lastUserIdx);
 }

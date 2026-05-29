@@ -3,6 +3,7 @@ import { join } from "path";
 import { Agent } from "@/agent";
 import { createSkillsMiddleware } from "@/agent/skills/skills-middleware";
 import { createTodoSystem } from "@/agent/todos/todos";
+import { createTranscriptMiddleware } from "@/agent/transcript";
 import type { Model, NonSystemMessage, ToolUseContent } from "@/foundation";
 
 import {
@@ -63,7 +64,7 @@ export async function createCodingAgent({
 
   const askUserQuestionTool = askUserQuestion ? createAskUserQuestionTool(askUserQuestion) : null;
 
-  const middlewares = [createSkillsMiddleware(skillsDirs), todoMiddleware];
+  const middlewares = [createSkillsMiddleware(skillsDirs), todoMiddleware, createTranscriptMiddleware({ cwd })];
   if (askUser) {
     middlewares.push(
       createCodingApprovalMiddleware({

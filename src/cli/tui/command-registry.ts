@@ -33,6 +33,11 @@ export const BUILTIN_COMMANDS: SlashCommand[] = [
     description: "Exit the TUI session",
     type: "builtin",
   },
+  {
+    name: "resume",
+    description: "Resume a previous session from this project",
+    type: "builtin",
+  },
 ];
 
 /** Parsed builtin invocation: command name plus any trailing argument string. */
