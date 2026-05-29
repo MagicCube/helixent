@@ -2,11 +2,26 @@ import { createContext, createElement, useCallback, useContext, useEffect, useMe
 import type { ReactNode } from "react";
 
 import type { Agent } from "@/agent";
-import type { AssistantMessage, NonSystemMessage, UserMessage } from "@/foundation";
+import type { ModelEntry } from "@/cli/config";
+import type { AssistantMessage, Model, NonSystemMessage, UserMessage } from "@/foundation";
 
 import type { PromptSubmission, SlashCommand } from "../command-registry";
 import { formatHelp, resolveBuiltinCommand } from "../command-registry";
+import { resolveModelSelection } from "../model-command";
 import { calculateTokenUsage, type TokenUsageSummary } from "../token-usage";
+
+export type ModelSelectionOptions = {
+  models: ModelEntry[];
+  defaultModelName?: string;
+  // eslint-disable-next-line no-unused-vars
+  buildModel: (entry: ModelEntry) => Model;
+};
+
+export type ModelPickerState = {
+  models: ModelEntry[];
+  currentModelName: string;
+  defaultModelName?: string;
+};
 
 type AgentLoopState = {
   agent: Agent;
@@ -16,6 +31,10 @@ type AgentLoopState = {
   onSubmit: (submission: PromptSubmission) => Promise<void>;
   abort: () => void;
   tokenUsage: TokenUsageSummary;
+  modelPicker: ModelPickerState | null;
+  // eslint-disable-next-line no-unused-vars
+  selectModel: (modelName: string) => void;
+  cancelModelSelection: () => void;
 };
 
 const AgentLoopContext = createContext<AgentLoopState | null>(null);
@@ -23,14 +42,17 @@ const AgentLoopContext = createContext<AgentLoopState | null>(null);
 export function AgentLoopProvider({
   agent,
   commands = [],
+  modelSelection,
   children,
 }: {
   agent: Agent;
   commands?: SlashCommand[];
+  modelSelection?: ModelSelectionOptions;
   children: ReactNode;
 }) {
   const [streaming, setStreaming] = useState(false);
   const [messages, setMessages] = useState<NonSystemMessage[]>([]);
+  const [modelPicker, setModelPicker] = useState<ModelPickerState | null>(null);
 
   const streamingRef = useRef(streaming);
   const pendingMessagesRef = useRef<NonSystemMessage[]>([]);
@@ -80,6 +102,27 @@ export function AgentLoopProvider({
     return calculateTokenUsage(messages);
   }, [messages]);
 
+  const appendAssistantText = useCallback((text: string) => {
+    const assistantMessage: AssistantMessage = {
+      role: "assistant",
+      content: [{ type: "text", text }],
+    };
+    setMessages((prev) => [...prev, assistantMessage]);
+  }, []);
+
+  const selectModel = useCallback(
+    (modelName: string) => {
+      const message = handleModelCommand(agent, modelSelection, modelName);
+      setModelPicker(null);
+      appendAssistantText(message);
+    },
+    [agent, appendAssistantText, modelSelection],
+  );
+
+  const cancelModelSelection = useCallback(() => {
+    setModelPicker(null);
+  }, []);
+
   const onSubmit = useCallback(
     async (submission: PromptSubmission) => {
       const { text, requestedSkillName } = submission;
@@ -116,6 +159,27 @@ export function AgentLoopProvider({
         return;
       }
 
+      if (invocation?.name === "model") {
+        flushPendingMessages();
+        const userMessage: UserMessage = { role: "user", content: [{ type: "text", text }] };
+        if (!invocation.args && modelSelection && modelSelection.models.length > 0) {
+          setMessages((prev) => [...prev, userMessage]);
+          setModelPicker({
+            models: modelSelection.models,
+            currentModelName: agent.model.name,
+            defaultModelName: modelSelection.defaultModelName,
+          });
+          return;
+        }
+
+        const assistantMessage: AssistantMessage = {
+          role: "assistant",
+          content: [{ type: "text", text: handleModelCommand(agent, modelSelection, invocation.args) }],
+        };
+        setMessages((prev) => [...prev, userMessage, assistantMessage]);
+        return;
+      }
+
       setStreaming(true);
 
       try {
@@ -146,7 +210,7 @@ export function AgentLoopProvider({
         setStreaming(false);
       }
     },
-    [agent, commands, enqueueMessage, flushPendingMessages],
+    [agent, commands, enqueueMessage, flushPendingMessages, modelSelection],
   );
 
   const value = useMemo(
@@ -157,8 +221,11 @@ export function AgentLoopProvider({
       onSubmit,
       abort,
       tokenUsage,
+      modelPicker,
+      selectModel,
+      cancelModelSelection,
     }),
-    [abort, agent, messages, onSubmit, streaming, tokenUsage],
+    [abort, agent, cancelModelSelection, messages, modelPicker, onSubmit, selectModel, streaming, tokenUsage],
   );
 
   return createElement(AgentLoopContext.Provider, { value }, children);
@@ -174,6 +241,28 @@ function useAgentLoopState(): AgentLoopState {
 
 export function useAgentLoop() {
   return useAgentLoopState();
+}
+
+function handleModelCommand(
+  agent: Agent,
+  modelSelection: ModelSelectionOptions | undefined,
+  args: string,
+): string {
+  if (!modelSelection) {
+    return "Model selection is unavailable in this session.";
+  }
+
+  const selection = resolveModelSelection({
+    models: modelSelection.models,
+    currentModelName: agent.model.name,
+    targetName: args,
+  });
+  if (!selection.ok) {
+    return selection.message;
+  }
+
+  agent.setModel(modelSelection.buildModel(selection.entry));
+  return selection.message;
 }
 
 function isAbortError(error: unknown): boolean {

@@ -29,6 +29,11 @@ export const BUILTIN_COMMANDS: SlashCommand[] = [
     type: "builtin",
   },
   {
+    name: "model",
+    description: "Choose the model for this TUI session",
+    type: "builtin",
+  },
+  {
     name: "quit",
     description: "Exit the TUI session",
     type: "builtin",
