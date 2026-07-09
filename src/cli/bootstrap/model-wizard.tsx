@@ -27,8 +27,11 @@ type ModelWizardProps = {
 function ModelWizard({ onComplete, onAbort }: ModelWizardProps) {
   const [step, setStep] = useState<Step>("provider");
   const [providerIndex, setProviderIndex] = useState(0);
+  const selectedProvider = MODEL_PROVIDERS[providerIndex]!;
   const [apiKey, setApiKey] = useState("");
   const [modelName, setModelName] = useState("");
+  const suggestedModelName = selectedProvider.defaultModelName ?? "";
+  const effectiveModelName = modelName.trim() || suggestedModelName;
   const [customBaseURL, setCustomBaseURL] = useState("");
   const [pendingEntry, setPendingEntry] = useState<ModelEntry | null>(null);
 
@@ -72,11 +75,9 @@ function ModelWizard({ onComplete, onAbort }: ModelWizardProps) {
     { isActive: step === "provider" },
   );
 
-  const selectedProvider = MODEL_PROVIDERS[providerIndex]!;
-
   const finishWithBaseURL = (url: string) => {
     setCustomBaseURL(url);
-    const entry = buildModelEntry(url, apiKey, modelName, selectedProvider.providerType);
+    const entry = buildModelEntry(url, apiKey, effectiveModelName, selectedProvider.providerType);
     setPendingEntry(entry);
     setStep("confirm");
   };
@@ -85,7 +86,7 @@ function ModelWizard({ onComplete, onAbort }: ModelWizardProps) {
     if (!selectedProvider.baseURL) {
       setStep("baseURL");
     } else {
-      const entry = buildModelEntry(selectedProvider.baseURL, apiKey, modelName, selectedProvider.providerType);
+      const entry = buildModelEntry(selectedProvider.baseURL, apiKey, effectiveModelName, selectedProvider.providerType);
       setPendingEntry(entry);
       setStep("confirm");
     }
@@ -142,12 +143,12 @@ function ModelWizard({ onComplete, onAbort }: ModelWizardProps) {
   if (step === "modelName") {
     return (
       <Box flexDirection="column" rowGap={1}>
-        <Text bold>Enter a model name</Text>
+        <Text bold>Enter a model name{suggestedModelName ? ` (default: ${suggestedModelName})` : ""}</Text>
         <Box>
           <Text>Model: </Text>
           <TextInput
             value={modelName}
-            placeholder="e.g. doubao-seed-2.0-code"
+            placeholder={suggestedModelName || "e.g. doubao-seed-2.0-code"}
             onChange={setModelName}
             onSubmit={goFromModelName}
           />
