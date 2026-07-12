@@ -36,14 +36,14 @@ export const MODEL_PROVIDERS: ModelProviderConfig[] = [
   {
     label: "Minimax Anthropic (Domestic)",
     id: "minimax_anthropic_cn",
-    baseURL: "https://api.minimaxi.com/anthropic/v1",
+    baseURL: "https://api.minimaxi.com/anthropic",
     providerType: "anthropic",
     defaultModelName: "MiniMax-M3",
   },
   {
     label: "Minimax Anthropic (Global)",
     id: "minimax_anthropic_global",
-    baseURL: "https://api.minimax.io/anthropic/v1",
+    baseURL: "https://api.minimax.io/anthropic",
     providerType: "anthropic",
     defaultModelName: "MiniMax-M3",
   },
