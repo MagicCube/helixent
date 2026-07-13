@@ -13,6 +13,7 @@ import { OpenAIModelProvider } from "@/community/openai";
 import type { ModelProvider } from "@/foundation";
 import { Model } from "@/foundation";
 
+import { getDefaultModelOptions } from "./model-providers";
 import { App } from "./tui";
 import { loadAvailableCommands, type SlashCommand } from "./tui/command-registry";
 import { AgentLoopProvider } from "./tui/hooks/use-agent-loop";
@@ -54,12 +55,7 @@ if (args.length > 0) {
     });
   }
 
-  const model = new Model(entry.name, provider, {
-    max_tokens: 16 * 1024,
-    thinking: {
-      type: "enabled",
-    },
-  });
+  const model = new Model(entry.name, provider, getDefaultModelOptions(entry.name));
 
   const skillsDirs = [
     join(process.cwd(), "skills"),
