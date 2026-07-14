@@ -8,13 +8,13 @@ export type ModelProviderConfig = {
   defaultModelName?: string;
 };
 
-export function getDefaultModelOptions(modelName: string): {
+export function getDefaultModelOptions(modelName: string, providerType: ProviderType): {
   max_tokens: number;
   thinking?: { type: "adaptive" | "enabled" };
 } {
   const options = { max_tokens: 16 * 1024 };
   if (modelName === "MiniMax-M3") {
-    return { ...options, thinking: { type: "adaptive" } };
+    return providerType === "openai" ? { ...options, thinking: { type: "adaptive" } } : options;
   }
   if (modelName.startsWith("MiniMax-M2")) {
     return options;

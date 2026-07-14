@@ -148,7 +148,7 @@ function ModelWizard({ onComplete, onAbort }: ModelWizardProps) {
           <Text>Model: </Text>
           <TextInput
             value={modelName}
-            placeholder={suggestedModelName || "e.g. doubao-seed-2.0-code"}
+            placeholder={suggestedModelName || "e.g. model-name"}
             onChange={setModelName}
             onSubmit={goFromModelName}
           />

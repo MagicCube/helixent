@@ -55,7 +55,7 @@ if (args.length > 0) {
     });
   }
 
-  const model = new Model(entry.name, provider, getDefaultModelOptions(entry.name));
+  const model = new Model(entry.name, provider, getDefaultModelOptions(entry.name, entry.provider));
 
   const skillsDirs = [
     join(process.cwd(), "skills"),

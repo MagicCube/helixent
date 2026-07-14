@@ -51,12 +51,14 @@ describe("MiniMax providers", () => {
   });
 
   test("use API-compatible thinking defaults", () => {
-    expect(getDefaultModelOptions("MiniMax-M3")).toEqual({
+    expect(getDefaultModelOptions("MiniMax-M3", "openai")).toEqual({
       max_tokens: 16 * 1024,
       thinking: { type: "adaptive" },
     });
-    expect(getDefaultModelOptions("MiniMax-M2.7")).toEqual({ max_tokens: 16 * 1024 });
-    expect(getDefaultModelOptions("claude-sonnet-4-5")).toEqual({
+    expect(getDefaultModelOptions("MiniMax-M3", "anthropic")).toEqual({ max_tokens: 16 * 1024 });
+    expect(getDefaultModelOptions("MiniMax-M2.7", "openai")).toEqual({ max_tokens: 16 * 1024 });
+    expect(getDefaultModelOptions("MiniMax-M2.7", "anthropic")).toEqual({ max_tokens: 16 * 1024 });
+    expect(getDefaultModelOptions("custom-model", "anthropic")).toEqual({
       max_tokens: 16 * 1024,
       thinking: { type: "enabled" },
     });
