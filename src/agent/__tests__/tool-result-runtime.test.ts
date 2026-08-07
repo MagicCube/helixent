@@ -152,4 +152,54 @@ describe("formatToolResultForMessage", () => {
       summary: "Applied patch",
     });
   });
+
+  test("falls back to a summary for circular structured success data", () => {
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+
+    const formatted = formatToolResultForMessage({
+      toolName: "custom_tool",
+      result: { ok: true, summary: "Custom tool completed", data: circular },
+    });
+
+    expect(JSON.parse(formatted)).toEqual({
+      ok: true,
+      summary: "Custom tool completed",
+    });
+  });
+
+  test("falls back safely when a raw custom result contains BigInt", () => {
+    const formatted = formatToolResultForMessage({
+      toolName: "custom_tool",
+      result: { count: 42n },
+    });
+
+    expect(JSON.parse(formatted)).toEqual({
+      ok: true,
+      summary: "[unserializable object]",
+    });
+  });
+
+  test("falls back to the structured error summary when details cannot be serialized", () => {
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+
+    const formatted = formatToolResultForMessage({
+      toolName: "custom_tool",
+      result: {
+        ok: false,
+        summary: "Custom tool failed",
+        error: "failure",
+        code: "CUSTOM_FAILED",
+        details: circular,
+      },
+    });
+
+    expect(JSON.parse(formatted)).toEqual({
+      ok: false,
+      summary: "Custom tool failed",
+      error: "failure",
+      code: "CUSTOM_FAILED",
+    });
+  });
 });
