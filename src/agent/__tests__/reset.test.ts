@@ -45,3 +45,42 @@ test("reset restores constructor messages and calls middleware reset hooks", asy
   expect(agent.messages).toEqual([initialMessage]);
   expect(messages).toEqual([initialMessage]);
 });
+
+test("reset is rejected while beforeAgentRun is still awaiting", async () => {
+  let signalStarted!: () => void;
+  let release!: () => void;
+  const started = new Promise<void>((resolve) => {
+    signalStarted = resolve;
+  });
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  const agent = new Agent({
+    model: new Model("test-model", provider),
+    prompt: "test",
+    middlewares: [
+      {
+        beforeAgentRun: async () => {
+          signalStarted();
+          await gate;
+        },
+      },
+    ],
+  });
+
+  const stream = agent.stream({ role: "user", content: [{ type: "text", text: "hello" }] });
+  const firstRead = stream.next();
+  await started;
+
+  // `_streaming` is still false in the main-branch startup sequence, but an
+  // abort controller already marks the run as active.
+  expect(agent.streaming).toBe(false);
+  await expect(agent.reset()).rejects.toThrow("Cannot reset Agent while a run is active");
+
+  release();
+  await firstRead;
+  while (!(await stream.next()).done) {
+    // Drain to complete normal cleanup.
+  }
+});
