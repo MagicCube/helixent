@@ -26,18 +26,28 @@
     "helixent": "dist/bin/helixent"
   },
   "files": [
-    "dist/bin/helixent"
+    "dist/bin/helixent",
+    "dist/js"
   ],
-  "module": "index.ts",
+  "module": "./dist/js/index.js",
+  "exports": {
+    ".": "./dist/js/index.js",
+    "./foundation": "./dist/js/foundation/index.js",
+    "./agent": "./dist/js/agent/index.js",
+    "./coding": "./dist/js/coding/index.js",
+    "./community/openai": "./dist/js/community/openai/index.js",
+    "./community/anthropic": "./dist/js/community/anthropic/index.js"
+  },
   "type": "module",
   "scripts": {
-    "prepublishOnly": "bun run build:bin",
+    "prepublishOnly": "bun run check",
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
     "hooks:install": "git config core.hooksPath .githooks",
     "build:bin": "rm -rf dist/bin && bun build index.ts --compile --outfile dist/bin/helixent",
-    "build:js": "rm -rf dist/js && bun build ./index.ts --outdir ./dist/js --splitting --target bun",
-    "check": "tsc --noEmit && eslint . --ext .ts && bun test",
+    "build:js": "rm -rf dist/js && bun build ./src/index.ts ./src/foundation/index.ts ./src/agent/index.ts ./src/coding/index.ts ./src/community/openai/index.ts ./src/community/anthropic/index.ts --outdir ./dist/js --root ./src --splitting --target bun --packages external",
+    "check": "tsc --noEmit && eslint . --ext .ts && bun test && bun run check:package",
+    "check:package": "bun run build:js && bun run build:bin && bun run scripts/check-package.ts",
     "check:types": "tsc --noEmit",
     "dev": "bun run index.ts",
     "lint": "eslint . --ext .ts",
