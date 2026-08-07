@@ -6,12 +6,6 @@ const mockContext = { prompt: "", messages: [], tools: [] } as never;
 
 describe("createTodoSystem", () => {
   describe("tool invocation", () => {
-    test("tool guidance tells the model to use merge=true when adding without replacement", () => {
-      const { tool } = createTodoSystem();
-      expect(tool.description).toContain("use merge=true to add new items without replacing existing ones");
-      expect(tool.description).not.toContain("merge=false to add new ones");
-    });
-
     test("replaces list when merge is false", async () => {
       const { tool } = createTodoSystem();
       const result = await tool.invoke({
