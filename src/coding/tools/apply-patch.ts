@@ -136,6 +136,17 @@ function applyHunks(original: string, file: PatchFile) {
     validateHunkCounts(hunk, file.newPath);
     const expectedIndex = hunk.oldStart - 1;
 
+    if (expectedIndex < sourceIndex) {
+      throw new Error(
+        `Patch hunks are overlapping or out of order in ${file.newPath}: hunk starts at line ${hunk.oldStart} after the source cursor advanced to line ${sourceIndex + 1}.`,
+      );
+    }
+    if (expectedIndex > sourceLines.length) {
+      throw new Error(
+        `Hunk start ${hunk.oldStart} is beyond the end of ${file.newPath} (${sourceLines.length} source lines).`,
+      );
+    }
+
     while (sourceIndex < expectedIndex) {
       output.push(sourceLines[sourceIndex] ?? "");
       sourceIndex += 1;
