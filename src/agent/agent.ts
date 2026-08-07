@@ -225,7 +225,7 @@ export class Agent {
       try {
         const tool = this.tools?.find((t) => t.name === toolUse.name);
         if (!tool) throw new Error(`Tool ${toolUse.name} not found`);
-        const beforeResult = await this._beforeToolUse(toolUse);
+        const beforeResult = await this._beforeToolUse(toolUse, signal);
         if (beforeResult.skip) {
           return { index, toolUseId: toolUse.id, toolName: toolUse.name, result: beforeResult.result };
         }
@@ -335,10 +335,13 @@ export class Agent {
     }
   }
 
-  private async _beforeToolUse(toolUse: ToolUseContent): Promise<{ skip: boolean; result?: unknown }> {
+  private async _beforeToolUse(
+    toolUse: ToolUseContent,
+    signal?: AbortSignal,
+  ): Promise<{ skip: boolean; result?: unknown }> {
     for (const middleware of this.middlewares) {
       if (!middleware.beforeToolUse) continue;
-      const result = await middleware.beforeToolUse({ agentContext: this._context, toolUse });
+      const result = await middleware.beforeToolUse({ agentContext: this._context, toolUse, signal });
       if (result && typeof result === "object" && "__skip" in result) {
         return { skip: true, result: result.result };
       }
@@ -359,4 +362,3 @@ export class Agent {
     }
   }
 }
-

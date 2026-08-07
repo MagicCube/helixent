@@ -11,13 +11,13 @@ export function createCodingApprovalMiddleware(options: {
   requiresApproval: string[];
   approvalPersistence?: ApprovalPersistence;
   // eslint-disable-next-line no-unused-vars
-  askUser: (toolUse: ToolUseContent) => Promise<ApprovalDecision>;
+  askUser: (toolUse: ToolUseContent, signal?: AbortSignal) => Promise<ApprovalDecision>;
 }): AgentMiddleware {
   const loadAllowList = options.approvalPersistence?.loadAllowList ?? emptyAllowList;
   const persistAllowedTool = options.approvalPersistence?.persistAllowedTool;
 
   return {
-    beforeToolUse: async ({ toolUse }) => {
+    beforeToolUse: async ({ toolUse, signal }) => {
       if (!options.requiresApproval.includes(toolUse.name)) {
         return;
       }
@@ -25,7 +25,7 @@ export function createCodingApprovalMiddleware(options: {
       if (allowed.has(toolUse.name)) {
         return;
       }
-      const decision = await options.askUser(toolUse);
+      const decision = await options.askUser(toolUse, signal);
       if (decision === "deny") {
         return {
           __skip: true,

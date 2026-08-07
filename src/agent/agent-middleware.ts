@@ -59,6 +59,8 @@ export type BeforeToolUseParams = {
   agentContext: AgentContext;
   /** The tool call descriptor emitted by the model. */
   toolUse: ToolUseContent;
+  /** Abort signal for the active agent run. */
+  signal?: AbortSignal;
 };
 
 export type AfterToolUseParams = {
@@ -123,13 +125,10 @@ export interface AgentMiddleware {
 
   /**
    * Runs immediately before a tool is invoked.
-   * @param params - Hook parameters.
+   * @param params - Hook parameters, including the active run's abort signal.
    * @returns Optional context updates to merge into `context`, or a skip instruction to bypass tool execution.
    */
-  beforeToolUse?: (params: {
-    agentContext: AgentContext;
-    toolUse: ToolUseContent<Record<string, unknown>>;
-  }) => Promise<BeforeToolUseResult>;
+  beforeToolUse?: (params: BeforeToolUseParams) => Promise<BeforeToolUseResult>;
   /**
    * Runs immediately after a tool invocation resolves.
    * @param params - Hook parameters.
