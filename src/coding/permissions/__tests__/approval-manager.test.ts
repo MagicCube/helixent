@@ -110,6 +110,32 @@ describe("ApprovalManager", () => {
     expect(events.at(-1)).toBeNull();
   });
 
+  test("aborting one run signal never publishes another queued request from that run", async () => {
+    const manager = new ApprovalManager();
+    const events: Array<string | null> = [];
+    manager.subscribe((req) => {
+      events.push(req?.toolUse.name ?? null);
+    });
+
+    const controller = new AbortController();
+    const first = manager.askUser(makeToolUse("bash"), controller.signal);
+    const second = manager.askUser(makeToolUse("write_file"), controller.signal);
+    const third = manager.askUser(makeToolUse("apply_patch"), controller.signal);
+
+    expect(events.at(-1)).toBe("bash");
+    controller.abort();
+
+    await Promise.all([
+      expect(first).rejects.toMatchObject({ name: "AbortError" }),
+      expect(second).rejects.toMatchObject({ name: "AbortError" }),
+      expect(third).rejects.toMatchObject({ name: "AbortError" }),
+    ]);
+
+    expect(events).not.toContain("write_file");
+    expect(events).not.toContain("apply_patch");
+    expect(events.at(-1)).toBeNull();
+  });
+
   test("subscribe returns unsubscribe function", async () => {
     const manager = new ApprovalManager();
     const events: (ToolUseContent | null)[] = [];
