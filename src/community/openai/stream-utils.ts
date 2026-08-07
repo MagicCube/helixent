@@ -21,8 +21,10 @@ export class StreamAccumulator {
   private toolCalls = new Map<number, { id: string; name: string; arguments: string }>();
   private usage: TokenUsage | undefined;
   private finished = false;
+  private seenChunk = false;
 
   push(chunk: OpenAIChatCompletionChunk): void {
+    this.seenChunk = true;
     const delta = chunk.choices[0]?.delta;
 
     if (delta) {
@@ -63,9 +65,10 @@ export class StreamAccumulator {
   /**
    * Marks the accumulator complete when the provider iterator ends without an
    * OpenAI usage chunk. Returns true when this call changed the final state.
+   * Empty iterators remain empty so downstream no-message safeguards still fire.
    */
   finish(): boolean {
-    if (this.finished) return false;
+    if (!this.seenChunk || this.finished) return false;
     this.finished = true;
     return true;
   }
