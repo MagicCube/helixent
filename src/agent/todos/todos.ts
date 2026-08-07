@@ -117,6 +117,12 @@ export function createTodoSystem(): { tool: Tool; middleware: AgentMiddleware } 
   });
 
   const middleware: AgentMiddleware = {
+    onReset: () => {
+      store.length = 0;
+      stepsSinceLastWrite = Infinity;
+      stepsSinceLastReminder = Infinity;
+    },
+
     beforeModel: async ({ modelContext }) => {
       stepsSinceLastWrite++;
       stepsSinceLastReminder++;
