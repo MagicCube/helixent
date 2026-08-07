@@ -35,7 +35,7 @@ export const grepSearchTool = defineTool({
     if (glob) {
       cmd.push("--glob", glob);
     }
-    cmd.push(pattern, path);
+    cmd.push("--", pattern, path);
 
     try {
       const proc = Bun.spawn({
