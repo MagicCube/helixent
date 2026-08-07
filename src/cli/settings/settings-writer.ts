@@ -20,7 +20,7 @@ export class SettingsWriter {
       throw new Error(`Project cwd must exist and be a directory: ${cwd}`);
     }
 
-    const path = this.loader.projectLocalSettingsPath(cwd);
+    const path = await this.loader.projectLocalSettingsPath(cwd);
     const file = Bun.file(path);
     let base: Record<string, unknown> = {};
     if (await file.exists()) {
@@ -41,12 +41,15 @@ export class SettingsWriter {
 
     const merged = appendToolToAllowList(base, toolName);
     const out = JSON.stringify(merged, null, 2) + "\n";
-    const parent = dirname(path);
-    await mkdir(parent, { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
+    const projectApprovalDir = dirname(path);
+    const projectsDir = dirname(projectApprovalDir);
+    await mkdir(projectsDir, { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
+    await mkdir(projectApprovalDir, { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
     await writeFile(path, out, { encoding: "utf8", mode: PRIVATE_FILE_MODE });
 
     if (process.platform !== "win32") {
-      await chmod(parent, PRIVATE_DIRECTORY_MODE);
+      await chmod(projectsDir, PRIVATE_DIRECTORY_MODE);
+      await chmod(projectApprovalDir, PRIVATE_DIRECTORY_MODE);
       await chmod(path, PRIVATE_FILE_MODE);
     }
   }
