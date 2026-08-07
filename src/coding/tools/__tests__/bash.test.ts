@@ -36,7 +36,7 @@ describe("bashTool", () => {
         command,
       });
 
-      expect(result).toMatch(new RegExp(`^Error: Command ${command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")} failed with exit code 7:`));
+      expect(result).toStartWith(`Error: Command ${command} failed with exit code 7:`);
     },
     10000,
   );
