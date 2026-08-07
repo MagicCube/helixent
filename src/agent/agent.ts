@@ -140,8 +140,10 @@ export class Agent {
    * clearMessages(), which intentionally removes every message.
    */
   async reset(): Promise<void> {
-    if (this._streaming) {
-      throw new Error("Cannot reset Agent while it is streaming");
+    // The abort controller is created before beforeAgentRun, so it is the full
+    // active-run guard. `_streaming` alone has a pre-run async window.
+    if (this._abortController !== null || this._streaming) {
+      throw new Error("Cannot reset Agent while a run is active");
     }
 
     this._context.messages.length = 0;
