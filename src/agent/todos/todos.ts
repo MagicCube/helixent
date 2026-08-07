@@ -21,7 +21,7 @@ const TOOL_DESCRIPTION = `Create and manage a structured task list for the curre
 2. Non-trivial tasks requiring careful planning or multiple operations
 3. User explicitly requests a todo list
 4. User provides multiple tasks (numbered or comma-separated)
-5. After receiving new instructions — capture requirements as todos (use merge=false to add new ones)
+5. After receiving new instructions — capture requirements as todos (use merge=true to add new items without replacing existing ones)
 6. After completing tasks — mark complete with merge=true and add follow-ups
 7. When starting new tasks — mark as in_progress (ideally only one at a time)
 
