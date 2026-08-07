@@ -49,6 +49,6 @@ test("does not overwrite an existing invalid config when adding a model", async 
   registerAddCommand(program);
 
   await expect(program.parseAsync(["node", "helixent", "add"])).rejects.toThrow();
-  expect(runModelWizard).toHaveBeenCalledTimes(1);
+  expect(runModelWizard).not.toHaveBeenCalled();
   expect(await readFile(configPath, "utf8")).toBe(invalidConfig);
 });
