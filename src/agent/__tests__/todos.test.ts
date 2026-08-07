@@ -88,5 +88,33 @@ describe("createTodoSystem", () => {
       });
       expect(result).toBeUndefined();
     });
+
+    test("reset clears stale todo reminders from the previous session", async () => {
+      const { tool, middleware } = createTodoSystem();
+      await tool.invoke({
+        todos: [{ id: "1", content: "Old session task", status: "in_progress" }],
+        merge: false,
+      });
+
+      let reminderSeen = false;
+      for (let step = 0; step < 10; step++) {
+        const result = await middleware.beforeModel?.({
+          modelContext: { prompt: "hello", messages: [] },
+          agentContext: mockContext,
+        });
+        reminderSeen ||= Boolean(result?.prompt?.includes("Old session task"));
+      }
+      expect(reminderSeen).toBe(true);
+
+      await middleware.onReset?.({ agentContext: mockContext });
+
+      for (let step = 0; step < 20; step++) {
+        const result = await middleware.beforeModel?.({
+          modelContext: { prompt: "fresh", messages: [] },
+          agentContext: mockContext,
+        });
+        expect(result).toBeUndefined();
+      }
+    });
   });
 });
