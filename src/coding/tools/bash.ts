@@ -25,10 +25,13 @@ export const bashTool = defineTool({
       void proc.exited.then(() => signal.removeEventListener("abort", onAbort));
     }
 
-    const output = await new Response(proc.stdout).text();
-    const exitCode = await proc.exited;
+    const [output, stderr, exitCode] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+
     if (exitCode !== 0) {
-      const stderr = await new Response(proc.stderr).text();
       return `Error: Command ${command} failed with exit code ${exitCode}: ${stderr}`;
     }
     return output;
