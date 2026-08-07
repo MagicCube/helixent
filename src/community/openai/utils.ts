@@ -8,6 +8,18 @@ import type {
   OpenAIChatCompletionMessageParam,
 } from "./types";
 
+function parseToolInput(argumentsText: string): Record<string, unknown> {
+  try {
+    const parsed: unknown = JSON.parse(argumentsText);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // Keep malformed model output inside the normal tool-validation/error path.
+  }
+  return {};
+}
+
 /**
  * Converts the messages to OpenAI ChatCompletionMessageParam messages.
  * @param messages - The messages to convert.
@@ -88,7 +100,7 @@ export function parseAssistantMessage(message: OpenAIChatCompletionMessage, usag
           type: "tool_use",
           id: tool_call.id,
           name: tool_call.function.name,
-          input: JSON.parse(tool_call.function.arguments),
+          input: parseToolInput(tool_call.function.arguments),
         });
       }
     }
