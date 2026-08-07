@@ -21,6 +21,8 @@ const PATH_FIELDS_BY_TOOL: Record<string, string[]> = {
   move_path: ["from", "to"],
 };
 
+const READ_ONLY_PATH_TOOLS = new Set(["read_file", "file_info", "list_files", "glob_search", "grep_search"]);
+
 function extractApplyPatchPaths(patch: string): string[] {
   const paths: string[] = [];
   for (const line of patch.replace(/\r\n/g, "\n").split("\n")) {
@@ -89,20 +91,42 @@ async function resolveThroughNearestExistingAncestor(path: string): Promise<stri
   }
 }
 
-async function targetsOutsideProject(cwd: string, toolUse: ToolUseContent): Promise<boolean> {
+async function canonicalExistingDirectories(paths: string[]): Promise<string[]> {
+  const roots = await Promise.all(
+    paths.map(async (path) => {
+      try {
+        return await realpath(path);
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return roots.filter((root): root is string => root !== null);
+}
+
+async function targetsOutsideAllowedScope(
+  cwd: string,
+  trustedReadRoots: string[],
+  toolUse: ToolUseContent,
+): Promise<boolean> {
   const paths = extractToolPaths(toolUse);
   if (paths.length === 0) return false;
 
-  let canonicalRoot: string;
+  let canonicalProjectRoot: string;
   try {
-    canonicalRoot = await realpath(cwd);
+    canonicalProjectRoot = await realpath(cwd);
   } catch {
     return true;
   }
 
+  const allowedRoots = [canonicalProjectRoot];
+  if (READ_ONLY_PATH_TOOLS.has(toolUse.name) && trustedReadRoots.length > 0) {
+    allowedRoots.push(...(await canonicalExistingDirectories(trustedReadRoots)));
+  }
+
   for (const path of paths) {
     const canonicalTarget = await resolveThroughNearestExistingAncestor(path);
-    if (!canonicalTarget || !isWithinDirectory(canonicalRoot, canonicalTarget)) {
+    if (!canonicalTarget || !allowedRoots.some((root) => isWithinDirectory(root, canonicalTarget))) {
       return true;
     }
   }
@@ -112,23 +136,25 @@ async function targetsOutsideProject(cwd: string, toolUse: ToolUseContent): Prom
 export function createCodingApprovalMiddleware(options: {
   cwd: string;
   requiresApproval: string[];
+  trustedReadRoots?: string[];
   approvalPersistence?: ApprovalPersistence;
   // eslint-disable-next-line no-unused-vars
   askUser: (toolUse: ToolUseContent) => Promise<ApprovalDecision>;
 }): AgentMiddleware {
   const loadAllowList = options.approvalPersistence?.loadAllowList ?? emptyAllowList;
   const persistAllowedTool = options.approvalPersistence?.persistAllowedTool;
+  const trustedReadRoots = options.trustedReadRoots ?? [];
 
   return {
     beforeToolUse: async ({ toolUse }) => {
-      const outsideProject = await targetsOutsideProject(options.cwd, toolUse);
+      const outsideAllowedScope = await targetsOutsideAllowedScope(options.cwd, trustedReadRoots, toolUse);
       const normallyRequiresApproval = options.requiresApproval.includes(toolUse.name);
-      if (!normallyRequiresApproval && !outsideProject) {
+      if (!normallyRequiresApproval && !outsideAllowedScope) {
         return;
       }
 
       const allowed = await loadAllowList(options.cwd);
-      if (allowed.has(toolUse.name) && !outsideProject) {
+      if (allowed.has(toolUse.name) && !outsideAllowedScope) {
         return;
       }
 
@@ -140,7 +166,7 @@ export function createCodingApprovalMiddleware(options: {
         };
       }
 
-      if (decision === "allow_always_project" && persistAllowedTool && !outsideProject) {
+      if (decision === "allow_always_project" && persistAllowedTool && !outsideAllowedScope) {
         try {
           await persistAllowedTool(options.cwd, toolUse.name);
         } catch (e) {
