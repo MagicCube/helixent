@@ -66,10 +66,20 @@ for (const [subpath, targets] of Object.entries(requiredExports)) {
 }
 
 const typeGlob = new Bun.Glob("**/*.d.ts");
+const relativeModuleSpecifier = /\b(?:from|import)\s*\(?\s*["'](\.\.?\/[^"']+)["']/g;
+const explicitRuntimeExtension = /\.(?:[cm]?js|json|node)$/;
 for await (const typeFile of typeGlob.scan({ cwd: resolve(root, "dist/types"), absolute: true })) {
   const content = await Bun.file(typeFile).text();
   if (content.includes('"@/') || content.includes("'@/")) {
     errors.push(`Published declaration contains an unresolved internal alias: ${typeFile}`);
+  }
+
+  relativeModuleSpecifier.lastIndex = 0;
+  for (const match of content.matchAll(relativeModuleSpecifier)) {
+    const specifier = match[1];
+    if (specifier && !explicitRuntimeExtension.test(specifier)) {
+      errors.push(`Published declaration contains a NodeNext-unsafe relative specifier ${specifier}: ${typeFile}`);
+    }
   }
 }
 
