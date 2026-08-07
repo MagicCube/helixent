@@ -49,6 +49,58 @@ describe("createCodingApprovalMiddleware", () => {
     expect(result).toBeUndefined();
   });
 
+  test("allows read-only access under trusted skill roots outside the project", async () => {
+    const skillRoot = join(tempRoot, "user-skills");
+    await mkdir(join(skillRoot, "example"), { recursive: true });
+
+    let asked = false;
+    const middleware = createCodingApprovalMiddleware({
+      cwd: projectDir,
+      trustedReadRoots: [skillRoot],
+      requiresApproval: [],
+      askUser: async () => {
+        asked = true;
+        return "deny" as ApprovalDecision;
+      },
+    });
+
+    const result = await middleware.beforeToolUse?.({
+      agentContext: mockAgentContext,
+      toolUse: makeToolUse("read_file", { path: join(skillRoot, "example", "SKILL.md") }),
+    });
+
+    expect(asked).toBe(false);
+    expect(result).toBeUndefined();
+  });
+
+  test("trusted read roots do not exempt writes", async () => {
+    const skillRoot = join(tempRoot, "user-skills");
+    await mkdir(skillRoot, { recursive: true });
+
+    let asked = false;
+    const middleware = createCodingApprovalMiddleware({
+      cwd: projectDir,
+      trustedReadRoots: [skillRoot],
+      requiresApproval: ["write_file"],
+      askUser: async () => {
+        asked = true;
+        return "allow_once" as ApprovalDecision;
+      },
+      approvalPersistence: {
+        loadAllowList: async () => new Set(["write_file"]),
+        persistAllowedTool: async () => {},
+      },
+    });
+
+    const result = await middleware.beforeToolUse?.({
+      agentContext: mockAgentContext,
+      toolUse: makeToolUse("write_file", { path: join(skillRoot, "modified.md"), content: "x" }),
+    });
+
+    expect(asked).toBe(true);
+    expect(result).toBeUndefined();
+  });
+
   test("asks before a read_file call can leave the project", async () => {
     let asked = false;
     const middleware = createCodingApprovalMiddleware({
