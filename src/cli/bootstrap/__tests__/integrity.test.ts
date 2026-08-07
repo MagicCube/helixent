@@ -52,3 +52,17 @@ test("preserves validation errors for non-empty invalid configs", async () => {
   await expect(validateIntegrity()).rejects.toThrow();
   expect(runFirstRunWizard).not.toHaveBeenCalled();
 });
+
+test("falls back to bootstrap when parsed YAML is not an inspectable object", async () => {
+  const root = await mkdtemp(join(tmpdir(), "helixent-integrity-"));
+  temporaryRoots.push(root);
+  const home = join(root, "home");
+  await mkdir(home, { recursive: true });
+  process.env.HELIXENT_HOME = home;
+  Bun.env.HELIXENT_HOME = home;
+
+  await writeFile(join(home, "config.yaml"), "null\n", "utf8");
+
+  await validateIntegrity();
+  expect(runFirstRunWizard).toHaveBeenCalledTimes(1);
+});
