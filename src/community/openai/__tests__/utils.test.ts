@@ -23,7 +23,7 @@ describe("convertToOpenAIMessages", () => {
     expect(result[0]).toMatchObject({ role: "user", content: [{ type: "text", text: "Hello" }] });
   });
 
-  test("converts assistant message with text content", () => {
+  test("converts assistant message with text content without adding non-standard reasoning_content", () => {
     const messages: Message[] = [
       { role: "assistant", content: [{ type: "text", text: "Hi there" }] },
     ];
@@ -31,6 +31,7 @@ describe("convertToOpenAIMessages", () => {
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({ role: "assistant" });
     expect((result[0] as { content: unknown[] }).content).toContainEqual({ type: "text", text: "Hi there" });
+    expect(Object.prototype.hasOwnProperty.call(result[0], "reasoning_content")).toBe(false);
   });
 
   test("converts assistant message with tool_use content", () => {
@@ -55,25 +56,46 @@ describe("convertToOpenAIMessages", () => {
         },
       ],
     });
+    expect(Object.prototype.hasOwnProperty.call(result[0], "reasoning_content")).toBe(false);
   });
 
-  test("skips thinking content in assistant messages", () => {
+  test("preserves thinking content in reasoning_content without emitting thinking content parts", () => {
     const messages: Message[] = [
       {
         role: "assistant",
         content: [
-          { type: "thinking", thinking: "Let me think..." },
+          { type: "thinking", thinking: "First thought" },
+          { type: "thinking", thinking: "Second thought" },
           { type: "text", text: "The answer is 42." },
         ],
       },
     ];
     const result = convertToOpenAIMessages(messages);
     expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({ role: "assistant" });
+    expect(result[0]).toMatchObject({ role: "assistant", reasoning_content: "First thought\nSecond thought" });
     expect((result[0] as { content: unknown[] }).content).toContainEqual({ type: "text", text: "The answer is 42." });
     expect((result[0] as { content: unknown[] }).content).not.toContainEqual(
       expect.objectContaining({ type: "thinking" }),
     );
+  });
+
+  test("filters empty assistant text parts before tool-call roundtrips", () => {
+    const messages: Message[] = [
+      {
+        role: "assistant",
+        content: [
+          { type: "text", text: "" },
+          { type: "tool_use", id: "call_1", name: "bash", input: { command: "pwd" } },
+        ],
+      },
+    ];
+
+    const result = convertToOpenAIMessages(messages);
+    expect(result[0]).toMatchObject({
+      role: "assistant",
+      content: "",
+      tool_calls: [{ type: "function", id: "call_1" }],
+    });
   });
 
   test("converts tool messages into separate tool role messages", () => {
