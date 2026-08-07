@@ -22,11 +22,11 @@ export interface FunctionTool<
 
 /**
  * Defines a function tool.
- * @param name - The name of the tool.
- * @param description - The description of the tool.
- * @param parameters - The parameters of the tool.
- * @param invoke - The function to invoke when the tool is called.
- * @returns The function tool.
+ *
+ * The schema is not only model-facing metadata. Tool input originates from a
+ * runtime model response, so every invocation is parsed before the user
+ * implementation runs. This keeps the implementation's inferred input type
+ * true at runtime and applies any schema transforms consistently.
  */
 export function defineTool<P extends z.ZodSchema<Record<string, unknown>>, R>({
   name,
@@ -40,5 +40,13 @@ export function defineTool<P extends z.ZodSchema<Record<string, unknown>>, R>({
   // eslint-disable-next-line no-unused-vars
   invoke: (input: z.infer<P>, signal?: AbortSignal) => Promise<R>;
 }): FunctionTool<P, R> {
-  return { name, description, parameters, invoke } as FunctionTool<P, R>;
+  return {
+    name,
+    description,
+    parameters,
+    invoke: async (input, signal) => {
+      const validatedInput = parameters.parse(input);
+      return invoke(validatedInput, signal);
+    },
+  } as FunctionTool<P, R>;
 }
