@@ -134,7 +134,7 @@ function applyHunks(original: string, file: PatchFile) {
 
   for (const hunk of file.hunks) {
     validateHunkCounts(hunk, file.newPath);
-    const expectedIndex = hunk.oldStart - 1;
+    const expectedIndex = hunk.oldCount === 0 ? hunk.oldStart : hunk.oldStart - 1;
 
     if (expectedIndex < sourceIndex) {
       throw new Error(
