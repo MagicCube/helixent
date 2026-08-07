@@ -121,6 +121,7 @@ export function formatToolResultForMessage({ toolName, result }: { toolName: str
         error: truncateSummary(normalized.error),
         ...(normalized.code ? { code: normalized.code } : {}),
       },
+      toolName,
     );
   }
 
@@ -139,6 +140,7 @@ export function formatToolResultForMessage({ toolName, result }: { toolName: str
       ok: true,
       summary: truncateSummary(normalized.summary),
     },
+    toolName,
   );
 }
 
@@ -156,23 +158,32 @@ function stringifyValue(value: unknown) {
   return String(value);
 }
 
-function safeJsonStringify(value: unknown): string | null {
+function safeJsonStringify(value: unknown): { serialized: string | null; failed: boolean } {
   try {
-    return JSON.stringify(value);
+    return { serialized: JSON.stringify(value), failed: false };
   } catch {
-    return null;
+    return { serialized: null, failed: true };
   }
 }
 
-function stringifyWithinLimit(payload: StructuredToolResult, maxLength: number | undefined, fallback: StructuredToolResult): string {
-  const serialized = safeJsonStringify(payload);
-  if (serialized !== null && (!maxLength || serialized.length <= maxLength)) {
-    return serialized;
+function stringifyWithinLimit(
+  payload: StructuredToolResult,
+  maxLength: number | undefined,
+  fallback: StructuredToolResult,
+  toolName: string,
+): string {
+  const primary = safeJsonStringify(payload);
+  if (primary.serialized !== null && (!maxLength || primary.serialized.length <= maxLength)) {
+    return primary.serialized;
   }
 
-  const fallbackSerialized = safeJsonStringify(fallback);
-  if (fallbackSerialized !== null && (!maxLength || fallbackSerialized.length <= maxLength)) {
-    return fallbackSerialized;
+  if (primary.failed) {
+    console.warn(`[helixent] Tool ${toolName} returned data that could not be JSON-serialized; using summary-only output.`);
+  }
+
+  const fallbackResult = safeJsonStringify(fallback);
+  if (fallbackResult.serialized !== null && (!maxLength || fallbackResult.serialized.length <= maxLength)) {
+    return fallbackResult.serialized;
   }
 
   if (fallback.ok) {
