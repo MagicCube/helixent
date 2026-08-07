@@ -26,4 +26,18 @@ describe("bashTool", () => {
 
     expect(result).toMatch(/^Error: Command exit 42 failed with exit code 42:/);
   });
+
+  test.skipIf(!zshOnPath())(
+    "drains large stderr output without deadlocking",
+    async () => {
+      const command = "head -c 2097152 /dev/zero >&2; exit 7";
+      const result = await bashTool.invoke({
+        description: "Write more stderr than a pipe buffer before exiting",
+        command,
+      });
+
+      expect(result).toMatch(new RegExp(`^Error: Command ${command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")} failed with exit code 7:`));
+    },
+    10000,
+  );
 });
