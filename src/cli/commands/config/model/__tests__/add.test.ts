@@ -5,6 +5,8 @@ import { join } from "node:path";
 
 import { Command } from "commander";
 
+import { loadConfig } from "@/cli/config";
+
 const runModelWizard = mock(async () => ({
   name: "new-model",
   baseURL: "https://example.com/v1",
@@ -51,4 +53,26 @@ test("does not overwrite an existing invalid config when adding a model", async 
   await expect(program.parseAsync(["node", "helixent", "add"])).rejects.toThrow();
   expect(runModelWizard).not.toHaveBeenCalled();
   expect(await readFile(configPath, "utf8")).toBe(invalidConfig);
+});
+
+test("allows adding the first model when an existing config has models empty", async () => {
+  const root = await mkdtemp(join(tmpdir(), "helixent-model-add-"));
+  temporaryRoots.push(root);
+  const home = join(root, "home");
+  await mkdir(home, { recursive: true });
+  process.env.HELIXENT_HOME = home;
+  Bun.env.HELIXENT_HOME = home;
+
+  await writeFile(join(home, "config.yaml"), "models: []\n", "utf8");
+
+  const program = new Command();
+  program.exitOverride();
+  registerAddCommand(program);
+  await program.parseAsync(["node", "helixent", "add"]);
+
+  expect(runModelWizard).toHaveBeenCalledTimes(1);
+  expect(loadConfig()).toMatchObject({
+    models: [{ name: "new-model", baseURL: "https://example.com/v1", provider: "openai" }],
+    defaultModel: "new-model",
+  });
 });
