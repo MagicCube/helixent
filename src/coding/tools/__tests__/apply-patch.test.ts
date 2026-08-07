@@ -43,6 +43,23 @@ describe("applyPatchTool", () => {
     expect(await readFile(filePath, "utf8")).toBe("alpha\ngamma\n");
   });
 
+  test("places zero-length insertion hunks after oldStart", async () => {
+    const filePath = join(tempDir, "demo.txt");
+    await writeFile(filePath, "alpha\nbeta\n");
+
+    const patch = [
+      `--- ${filePath}`,
+      `+++ ${filePath}`,
+      "@@ -1,0 +2,1 @@",
+      "+inserted",
+      "",
+    ].join("\n");
+
+    const result = await applyPatchTool.invoke({ description: "Insert a line after alpha", patch });
+    expect(result).toMatchObject({ ok: true });
+    expect(await readFile(filePath, "utf8")).toBe("alpha\ninserted\nbeta\n");
+  });
+
   test("rejects file deletion patches", async () => {
     const filePath = join(tempDir, "demo.txt");
     const patch = [
@@ -95,8 +112,8 @@ describe("applyPatchTool", () => {
       "@@ -2,1 +2,1 @@",
       "-beta",
       "+BETA",
-      "@@ -1,0 +1,1 @@",
-      "+inserted-before-alpha",
+      "@@ -1,0 +2,1 @@",
+      "+late-insertion",
       "",
     ].join("\n");
 
