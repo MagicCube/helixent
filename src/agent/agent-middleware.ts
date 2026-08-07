@@ -35,6 +35,11 @@ export type BeforeAgentRunParams = {
   agentContext: AgentContext;
 };
 
+export type ResetAgentParams = {
+  /** The restored agent context after transcript reset. */
+  agentContext: AgentContext;
+};
+
 export type AfterAgentRunParams = {
   /** The agent context for this run (shared, mutable). */
   agentContext: AgentContext;
@@ -98,6 +103,13 @@ export interface AgentMiddleware {
    * @returns Optional context updates to merge into `context`.
    */
   beforeAgentRun?: (params: BeforeAgentRunParams) => Promise<Partial<AgentContext> | null | undefined | void>;
+
+  /**
+   * Runs when a caller resets the agent to its initial transcript. Use this to
+   * clear middleware-owned session state that is not stored in messages.
+   */
+  onReset?: (params: ResetAgentParams) => Promise<void> | void;
+
   /**
    * Runs once when the agent is about to stop because it produced no tool calls.
    *
