@@ -63,7 +63,12 @@ export function ensureHelixentHomeDirectory(): void {
   const home = getHelixentHomePath();
   mkdirSync(home, { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
   if (process.platform !== "win32") {
-    chmodSync(home, PRIVATE_DIRECTORY_MODE);
+    try {
+      chmodSync(home, PRIVATE_DIRECTORY_MODE);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to secure HELIXENT_HOME directory ${home}: ${message}`, { cause: error });
+    }
   }
 }
 
