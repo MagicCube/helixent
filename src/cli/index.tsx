@@ -1,5 +1,3 @@
-import { join } from "node:path";
-
 import { Command } from "commander";
 import { render } from "ink";
 
@@ -13,6 +11,7 @@ import { OpenAIModelProvider } from "@/community/openai";
 import type { ModelProvider } from "@/foundation";
 import { Model } from "@/foundation";
 
+import { buildCliSkillDirs } from "./skill-paths";
 import { App } from "./tui";
 import { loadAvailableCommands, type SlashCommand } from "./tui/command-registry";
 import { AgentLoopProvider } from "./tui/hooks/use-agent-loop";
@@ -61,13 +60,10 @@ if (args.length > 0) {
     },
   });
 
-  const skillsDirs = [
-    join(process.cwd(), "skills"),
-    join(process.cwd(), ".agents/skills"),
-    join(Bun.env.HELIXENT_HOME!, "skills"),
-    "~/.agents/skills",
-    "~/.helixent/skills",
-  ];
+  const skillsDirs = buildCliSkillDirs({
+    cwd: process.cwd(),
+    helixentHome: Bun.env.HELIXENT_HOME!,
+  });
 
   const settingsLoader = new SettingsLoader();
   const settingsWriter = new SettingsWriter(settingsLoader);
