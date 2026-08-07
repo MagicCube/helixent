@@ -33,10 +33,12 @@ export async function validateIntegrity(): Promise<void> {
       try {
         const raw = readFileSync(getConfigFilePath(), "utf8");
         const parsed: unknown = yamlParse(raw);
+        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+          throw new Error("Config YAML is not an object.");
+        }
+        const models = (parsed as { models?: unknown }).models;
+        modelsLen = Array.isArray(models) ? models.length : undefined;
         inspectedConfig = true;
-        modelsLen = Array.isArray((parsed as { models?: unknown }).models)
-          ? (parsed as { models: unknown[] }).models.length
-          : undefined;
       } catch {
         // If we can't inspect the YAML, fall back to bootstrap instead of crashing.
       }
