@@ -23,7 +23,6 @@ describe("ApprovalManager", () => {
     expect(received).toHaveLength(1);
     expect(received[0]!.name).toBe("bash");
 
-    // Resolve so the promise doesn't hang
     manager.respond("allow_once");
     const decision = await promise;
     expect(decision).toBe("allow_once");
@@ -52,11 +51,9 @@ describe("ApprovalManager", () => {
     const p1 = manager.askUser(makeToolUse("bash"));
     const p2 = manager.askUser(makeToolUse("write_file"));
 
-    // Only the first should be active
     manager.respond("allow_once");
     decisions.push(await p1);
 
-    // After resolving first, second becomes active
     manager.respond("deny");
     decisions.push(await p2);
 
@@ -75,8 +72,42 @@ describe("ApprovalManager", () => {
     manager.respond("allow_once");
     await promise;
 
-    // After resolving, subscriber should get null
     expect(events).toContain(null);
+  });
+
+  test("aborting the current request rejects it and clears subscriber state", async () => {
+    const manager = new ApprovalManager();
+    const events: Array<string | null> = [];
+    manager.subscribe((req) => {
+      events.push(req?.toolUse.name ?? null);
+    });
+
+    const controller = new AbortController();
+    const pending = manager.askUser(makeToolUse("bash"), controller.signal);
+    controller.abort();
+
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    expect(events.at(-1)).toBeNull();
+  });
+
+  test("aborting a queued request removes it before it can become current", async () => {
+    const manager = new ApprovalManager();
+    const events: Array<string | null> = [];
+    manager.subscribe((req) => {
+      events.push(req?.toolUse.name ?? null);
+    });
+
+    const first = manager.askUser(makeToolUse("bash"));
+    const controller = new AbortController();
+    const second = manager.askUser(makeToolUse("write_file"), controller.signal);
+    controller.abort();
+
+    await expect(second).rejects.toMatchObject({ name: "AbortError" });
+    manager.respond("allow_once");
+    await first;
+
+    expect(events).not.toContain("write_file");
+    expect(events.at(-1)).toBeNull();
   });
 
   test("subscribe returns unsubscribe function", async () => {
@@ -94,13 +125,11 @@ describe("ApprovalManager", () => {
     expect(events.length).toBeGreaterThan(0);
     const countBefore = events.length;
 
-    // After unsubscribing, new requests should not trigger callback
     unsubscribe();
     const promise2 = manager.askUser(makeToolUse("write_file"));
     manager.respond("deny");
     await promise2;
 
-    // No new events after unsubscribe (the null from queue empty may have fired)
     expect(events.length).toBe(countBefore);
   });
 });
