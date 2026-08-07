@@ -47,9 +47,9 @@ export const bashTool = defineTool({
     command: z.string().describe("The bash command to execute."),
   }),
   invoke: async ({ command }, signal) => {
-    // Execute the command and return the standard output or standard error
+    // Execute the command and return the standard output or standard error.
     const proc = Bun.spawn({
-      cmd: ["zsh", "-c", command],
+      cmd: ["bash", "-c", command],
       stdout: "pipe",
       stderr: "pipe",
     });
