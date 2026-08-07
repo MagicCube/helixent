@@ -51,15 +51,22 @@ export class ApprovalManager {
   };
 
   private _processQueue() {
-    if (this._currentRequest || this._queue.length === 0) {
-      if (this._queue.length === 0 && !this._currentRequest) {
-        this._subscriber?.(null);
+    if (this._currentRequest) return;
+
+    while (this._queue.length > 0) {
+      const next = this._queue.shift()!;
+      if (next.signal?.aborted) {
+        this._cleanupRequest(next);
+        next.reject(abortError());
+        continue;
       }
+
+      this._currentRequest = next;
+      this._subscriber?.(next);
       return;
     }
 
-    this._currentRequest = this._queue.shift()!;
-    this._subscriber?.(this._currentRequest);
+    this._subscriber?.(null);
   }
 
   private _cleanupRequest(request: PendingApprovalRequest) {
