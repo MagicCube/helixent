@@ -151,7 +151,12 @@ export class Agent {
     this._context.requestedSkillName = null;
 
     for (const middleware of this.middlewares) {
-      await middleware.onReset?.({ agentContext: this._context });
+      if (!middleware.onReset) continue;
+      try {
+        await middleware.onReset({ agentContext: this._context });
+      } catch (error) {
+        console.warn("[helixent] Agent middleware reset hook failed:", error);
+      }
     }
   }
 
