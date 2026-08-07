@@ -39,6 +39,26 @@ describe("movePathTool", () => {
     await expect(readFile(to, "utf8")).resolves.toBe("payload\n");
   });
 
+  test("refuses to overwrite an existing target file", async () => {
+    const from = join(tempDir, "from.txt");
+    const to = join(tempDir, "to.txt");
+    await writeFile(from, "source\n");
+    await writeFile(to, "keep-me\n");
+
+    const result = await movePathTool.invoke({
+      description: "Do not overwrite target",
+      from,
+      to,
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      code: "TARGET_EXISTS",
+    });
+    await expect(readFile(from, "utf8")).resolves.toBe("source\n");
+    await expect(readFile(to, "utf8")).resolves.toBe("keep-me\n");
+  });
+
   test("returns structured error for relative source path", async () => {
     const result = await movePathTool.invoke({
       description: "Move invalid source",
