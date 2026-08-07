@@ -46,6 +46,37 @@ test("reset restores constructor messages and calls middleware reset hooks", asy
   expect(messages).toEqual([initialMessage]);
 });
 
+test("reset isolates a failing middleware hook and still finishes the session reset", async () => {
+  const initialMessage: NonSystemMessage = {
+    role: "user",
+    content: [{ type: "text", text: "initial context" }],
+  };
+  let laterHookCalled = false;
+  const agent = new Agent({
+    model: new Model("test-model", provider),
+    prompt: "test",
+    messages: [initialMessage],
+    middlewares: [
+      {
+        onReset: () => {
+          throw new Error("broken reset hook");
+        },
+      },
+      {
+        onReset: () => {
+          laterHookCalled = true;
+        },
+      },
+    ],
+  });
+
+  agent.messages.push({ role: "assistant", content: [{ type: "text", text: "old session" }] });
+
+  await expect(agent.reset()).resolves.toBeUndefined();
+  expect(laterHookCalled).toBe(true);
+  expect(agent.messages).toEqual([initialMessage]);
+});
+
 test("reset is rejected while beforeAgentRun is still awaiting", async () => {
   let signalStarted!: () => void;
   let release!: () => void;
