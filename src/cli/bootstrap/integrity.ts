@@ -28,21 +28,21 @@ export async function validateIntegrity(): Promise<void> {
       // If schema constraints change in the future, keep this as a safety check.
     } catch (err) {
       // Detect `models: []` even when schema validation fails.
+      let inspectedConfig = false;
+      let modelsLen: number | undefined;
       try {
         const raw = readFileSync(getConfigFilePath(), "utf8");
         const parsed: unknown = yamlParse(raw);
-        const modelsLen = Array.isArray((parsed as { models?: unknown }).models)
+        inspectedConfig = true;
+        modelsLen = Array.isArray((parsed as { models?: unknown }).models)
           ? (parsed as { models: unknown[] }).models.length
           : undefined;
-
-        if (modelsLen === 0) {
-          // Fall through to bootstrap.
-        } else {
-          // Preserve previous behavior for other invalid config formats.
-          throw err;
-        }
       } catch {
         // If we can't inspect the YAML, fall back to bootstrap instead of crashing.
+      }
+
+      if (inspectedConfig && modelsLen !== 0) {
+        throw err;
       }
     }
     // Fall through to bootstrap.
