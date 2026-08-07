@@ -225,7 +225,9 @@ export class Agent {
       try {
         const tool = this.tools?.find((t) => t.name === toolUse.name);
         if (!tool) throw new Error(`Tool ${toolUse.name} not found`);
+        signal?.throwIfAborted();
         const beforeResult = await this._beforeToolUse(toolUse);
+        signal?.throwIfAborted();
         if (beforeResult.skip) {
           return { index, toolUseId: toolUse.id, toolName: toolUse.name, result: beforeResult.result };
         }
