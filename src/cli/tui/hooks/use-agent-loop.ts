@@ -93,7 +93,7 @@ export function AgentLoopProvider({
       if (streamingRef.current) return;
 
       if (invocation?.name === "clear") {
-        agent.clearMessages();
+        await agent.reset();
         flushPendingMessages();
         setMessages([]);
         clearTerminal();
