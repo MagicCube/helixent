@@ -94,6 +94,11 @@ describe("SettingsWriter", () => {
 
     const repoLocalPath = join(projectDir, ".helixent", "settings.local.json");
     expect(await Bun.file(repoLocalPath).exists()).toBe(false);
+
+    if (process.platform !== "win32") {
+      expect((await stat(dirname(trustedPath))).mode & 0o777).toBe(0o700);
+      expect((await stat(trustedPath)).mode & 0o777).toBe(0o600);
+    }
   });
 
   test("appendAllowedTool rejects a nonexistent project cwd without creating it", async () => {
