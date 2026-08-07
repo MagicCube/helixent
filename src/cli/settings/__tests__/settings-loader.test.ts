@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -24,6 +24,10 @@ afterEach(async () => {
 });
 
 describe("SettingsLoader", () => {
+  test("rejects a relative HELIXENT_HOME for trusted approval state", () => {
+    expect(() => new SettingsLoader(".helixent")).toThrow("HELIXENT_HOME must be absolute");
+  });
+
   test("loadAllowList ignores repo-controlled grants and trusts user-owned project approvals", async () => {
     await writeFile(join(helixHome, "settings.json"), JSON.stringify({ permissions: { allow: ["bash"] } }), "utf8");
     await writeFile(
@@ -38,7 +42,7 @@ describe("SettingsLoader", () => {
     );
 
     const loader = new SettingsLoader(helixHome);
-    const trustedProjectPath = loader.projectLocalSettingsPath(projectDir);
+    const trustedProjectPath = await loader.projectLocalSettingsPath(projectDir);
     expect(trustedProjectPath.startsWith(helixHome)).toBe(true);
     expect(trustedProjectPath.startsWith(projectDir)).toBe(false);
     await mkdir(dirname(trustedProjectPath), { recursive: true });
@@ -78,6 +82,25 @@ describe("SettingsLoader", () => {
     expect(merged.permissions?.allow?.sort()).toEqual(["a"]);
     expect((merged.permissions as Record<string, unknown>).customKey).toBe("fromLocal");
   });
+
+  test.skipIf(process.platform === "win32")("retargeting a project symlink does not transfer approvals", async () => {
+    const firstProject = join(baseDir, "first-project");
+    const secondProject = join(baseDir, "second-project");
+    const projectLink = join(baseDir, "project-link");
+    await mkdir(firstProject, { recursive: true });
+    await mkdir(secondProject, { recursive: true });
+    await symlink(firstProject, projectLink);
+
+    const loader = new SettingsLoader(helixHome);
+    const writer = new SettingsWriter(loader);
+    await writer.appendAllowedTool(projectLink, "bash");
+    expect(await loader.loadAllowList(projectLink)).toEqual(new Set(["bash"]));
+
+    await rm(projectLink, { force: true });
+    await symlink(secondProject, projectLink);
+
+    expect(await loader.loadAllowList(projectLink)).toEqual(new Set());
+  });
 });
 
 describe("SettingsWriter", () => {
@@ -86,7 +109,7 @@ describe("SettingsWriter", () => {
     const writer = new SettingsWriter(loader);
     await writer.appendAllowedTool(projectDir, "bash");
 
-    const trustedPath = loader.projectLocalSettingsPath(projectDir);
+    const trustedPath = await loader.projectLocalSettingsPath(projectDir);
     expect(trustedPath.startsWith(helixHome)).toBe(true);
     expect(trustedPath.startsWith(projectDir)).toBe(false);
     const raw = await Bun.file(trustedPath).text();
@@ -96,7 +119,10 @@ describe("SettingsWriter", () => {
     expect(await Bun.file(repoLocalPath).exists()).toBe(false);
 
     if (process.platform !== "win32") {
-      expect((await stat(dirname(trustedPath))).mode & 0o777).toBe(0o700);
+      const projectApprovalDir = dirname(trustedPath);
+      const projectsDir = dirname(projectApprovalDir);
+      expect((await stat(projectsDir)).mode & 0o777).toBe(0o700);
+      expect((await stat(projectApprovalDir)).mode & 0o777).toBe(0o700);
       expect((await stat(trustedPath)).mode & 0o777).toBe(0o600);
     }
   });
