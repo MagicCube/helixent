@@ -14,18 +14,37 @@ import type { AgentMiddleware } from "./agent-middleware";
 import type { SkillFrontmatter } from "./skills/types";
 import { formatToolResultForMessage } from "./tool-result-runtime";
 
+/**
+ * A context that is used to invoke a React agent.
+ */
 export interface AgentContext {
+  /** The system prompt to use to invoke the agent. */
   prompt: string;
+  /** The messages to use to invoke the agent. */
   messages: NonSystemMessage[];
+  /** The tools to use to invoke the agent. */
   tools?: Tool[];
+  /** The skills to use to invoke the agent. */
   skills?: SkillFrontmatter[];
+  /** Explicitly requested skill for the next run, when set by the caller. */
   requestedSkillName?: string | null;
 }
 
+/**
+ * The options for the ReactAgent.
+ */
 export interface AgentOptions {
+  /** The maximum number of steps to take. */
   maxSteps?: number;
 }
 
+/**
+ * An agent loop that uses the ReAct pattern to reason about and execute actions.
+ * @param name - The name of the agent.
+ * @param model - The model to use to invoke the agent.
+ * @param context - The context of the agent.
+ * @param options - The options for the agent.
+ */
 export class Agent {
   private readonly _context: AgentContext;
   private _streaming = false;
@@ -36,6 +55,13 @@ export class Agent {
   readonly options: Required<AgentOptions>;
   readonly middlewares: AgentMiddleware[];
 
+  /**
+   * Creates a new agent.
+   * @param name - The name of the agent.
+   * @param model - The model to use to invoke the agent.
+   * @param context - The context of the agent.
+   * @param options - The options for the agent.
+   */
   constructor({
     name,
     model,
@@ -55,15 +81,25 @@ export class Agent {
   }) {
     this.name = name;
     this.model = model;
-    this._context = { prompt, tools, messages };
+    this._context = {
+      prompt,
+      tools,
+      messages,
+    };
     this.middlewares = middlewares;
     this.options = { maxSteps };
   }
 
+  /**
+   * Gets the messages for the agent.
+   */
   get messages() {
     return this._context.messages;
   }
 
+  /**
+   * Gets or sets the prompt for the agent.
+   */
   get prompt() {
     return this._context.prompt;
   }
@@ -71,6 +107,9 @@ export class Agent {
     this._context.prompt = prompt;
   }
 
+  /**
+   * Gets the tools for the agent.
+   */
   get tools() {
     return this._context.tools;
   }
@@ -79,14 +118,25 @@ export class Agent {
     this._context.requestedSkillName = requestedSkillName;
   }
 
+  /**
+   * Gets whether the agent is streaming.
+   */
   get streaming() {
     return this._streaming;
   }
 
+  /**
+   * Clears all messages from the agent's internal context.
+   */
   clearMessages() {
     this._context.messages.length = 0;
   }
 
+  /**
+   * Runs the agent.
+   * @param message - The message to send to the agent.
+   * @returns The response from the agent. If the agent ran successfully, the response will be the final response from the agent. If the agent stopped running due to a maximum number of steps being reached, the response will be the last response from the agent.
+   */
   async *stream(message: UserMessage): AsyncGenerator<AgentEvent> {
     if (this._streaming) {
       throw new Error("Agent is already streaming");
@@ -120,6 +170,9 @@ export class Agent {
     }
   }
 
+  /**
+   * Aborts the current stream, including any in-flight model request.
+   */
   abort() {
     this._abortController?.abort();
   }
@@ -143,6 +196,7 @@ export class Agent {
     if (!latest) {
       throw new Error("Model stream ended without producing a message");
     }
+    // Defensive: ensure the final message is not flagged as streaming.
     if (latest.streaming) {
       delete latest.streaming;
     }
@@ -225,7 +279,9 @@ export class Agent {
     for (const middleware of this.middlewares) {
       if (!middleware.beforeModel) continue;
       const result = await middleware.beforeModel({ modelContext, agentContext: this._context });
-      if (result) Object.assign(modelContext, result);
+      if (result) {
+        Object.assign(modelContext, result);
+      }
     }
   }
 
@@ -233,7 +289,9 @@ export class Agent {
     for (const middleware of this.middlewares) {
       if (!middleware.afterModel) continue;
       const result = await middleware.afterModel({ agentContext: this._context, message });
-      if (result) Object.assign(message, result);
+      if (result) {
+        Object.assign(message, result);
+      }
     }
   }
 
@@ -241,7 +299,9 @@ export class Agent {
     for (const middleware of this.middlewares) {
       if (!middleware.beforeAgentRun) continue;
       const result = await middleware.beforeAgentRun({ agentContext: this._context });
-      if (result) Object.assign(this._context, result);
+      if (result) {
+        Object.assign(this._context, result);
+      }
     }
   }
 
@@ -249,7 +309,9 @@ export class Agent {
     for (const middleware of this.middlewares) {
       if (!middleware.afterAgentRun) continue;
       const result = await middleware.afterAgentRun({ agentContext: this._context });
-      if (result) Object.assign(this._context, result);
+      if (result) {
+        Object.assign(this._context, result);
+      }
     }
   }
 
@@ -257,7 +319,9 @@ export class Agent {
     for (const middleware of this.middlewares) {
       if (!middleware.beforeAgentStep) continue;
       const result = await middleware.beforeAgentStep({ agentContext: this._context, step });
-      if (result) Object.assign(this._context, result);
+      if (result) {
+        Object.assign(this._context, result);
+      }
     }
   }
 
@@ -265,7 +329,9 @@ export class Agent {
     for (const middleware of this.middlewares) {
       if (!middleware.afterAgentStep) continue;
       const result = await middleware.afterAgentStep({ agentContext: this._context, step });
-      if (result) Object.assign(this._context, result);
+      if (result) {
+        Object.assign(this._context, result);
+      }
     }
   }
 
@@ -279,7 +345,9 @@ export class Agent {
       if (result && typeof result === "object" && "__skip" in result) {
         return { skip: true, result: result.result };
       }
-      if (result) Object.assign(this._context, result);
+      if (result) {
+        Object.assign(this._context, result);
+      }
     }
     return { skip: false };
   }
@@ -288,7 +356,9 @@ export class Agent {
     for (const middleware of this.middlewares) {
       if (!middleware.afterToolUse) continue;
       const result = await middleware.afterToolUse({ agentContext: this._context, toolUse, toolResult });
-      if (result) Object.assign(this._context, result);
+      if (result) {
+        Object.assign(this._context, result);
+      }
     }
   }
 }
