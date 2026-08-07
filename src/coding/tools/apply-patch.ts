@@ -128,22 +128,35 @@ function validateHunkCounts(hunk: PatchHunk, filePath: string) {
 }
 
 function applyHunks(original: string, file: PatchFile) {
-  const sourceLines = original === "" ? [] : original.replace(/\r\n/g, "\n").split("\n");
+  const normalizedOriginal = original.replace(/\r\n/g, "\n");
+  const sourceLines = original === "" ? [] : normalizedOriginal.split("\n");
+  const logicalLineCount =
+    normalizedOriginal.endsWith("\n") && sourceLines.length > 0 ? sourceLines.length - 1 : sourceLines.length;
   const output: string[] = [];
   let sourceIndex = 0;
 
   for (const hunk of file.hunks) {
     validateHunkCounts(hunk, file.newPath);
-    const expectedIndex = hunk.oldCount === 0 ? hunk.oldStart : hunk.oldStart - 1;
 
+    if (hunk.oldCount === 0) {
+      if (hunk.oldStart > logicalLineCount) {
+        throw new Error(
+          `Hunk start ${hunk.oldStart} is beyond the end of ${file.newPath} (${logicalLineCount} source lines).`,
+        );
+      }
+    } else {
+      const lastConsumedLine = hunk.oldStart + hunk.oldCount - 1;
+      if (hunk.oldStart < 1 || lastConsumedLine > logicalLineCount) {
+        throw new Error(
+          `Hunk range ${hunk.oldStart}-${lastConsumedLine} is beyond the end of ${file.newPath} (${logicalLineCount} source lines).`,
+        );
+      }
+    }
+
+    const expectedIndex = hunk.oldCount === 0 ? hunk.oldStart : hunk.oldStart - 1;
     if (expectedIndex < sourceIndex) {
       throw new Error(
         `Patch hunks are overlapping or out of order in ${file.newPath}: hunk starts at line ${hunk.oldStart} after the source cursor advanced to line ${sourceIndex + 1}.`,
-      );
-    }
-    if (expectedIndex > sourceLines.length) {
-      throw new Error(
-        `Hunk start ${hunk.oldStart} is beyond the end of ${file.newPath} (${sourceLines.length} source lines).`,
       );
     }
 
