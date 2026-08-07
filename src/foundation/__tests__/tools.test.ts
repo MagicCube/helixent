@@ -16,11 +16,11 @@ describe("defineTool", () => {
     expect(tool.description).toBe("A test tool");
   });
 
-  test("invoke calls the provided function with input", async () => {
+  test("invoke calls the provided function with parsed input", async () => {
     const tool = defineTool({
       name: "echo",
       description: "Echoes input",
-      parameters: { parse: () => ({}) } as never,
+      parameters: { parse: (input: unknown) => input } as never,
       invoke: async (input) => JSON.stringify(input),
     });
 
