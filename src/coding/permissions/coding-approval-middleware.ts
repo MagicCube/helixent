@@ -1,4 +1,5 @@
 import { realpath } from "node:fs/promises";
+import { homedir } from "node:os";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 
 import type { AgentMiddleware } from "@/agent/agent-middleware";
@@ -68,6 +69,14 @@ function isMissingPathError(error: unknown): boolean {
   );
 }
 
+function expandHome(path: string): string {
+  if (path === "~") return homedir();
+  if (path.startsWith("~/") || path.startsWith("~\\")) {
+    return resolve(homedir(), path.slice(2));
+  }
+  return path;
+}
+
 async function resolveThroughNearestExistingAncestor(path: string): Promise<string | null> {
   if (!isAbsolute(path)) return null;
 
@@ -95,7 +104,7 @@ async function canonicalExistingDirectories(paths: string[]): Promise<string[]> 
   const roots = await Promise.all(
     paths.map(async (path) => {
       try {
-        return await realpath(path);
+        return await realpath(expandHome(path));
       } catch {
         return null;
       }
