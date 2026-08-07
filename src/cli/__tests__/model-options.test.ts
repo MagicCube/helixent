@@ -10,12 +10,19 @@ describe("defaultModelOptionsForProvider", () => {
     expect(options).not.toHaveProperty("thinking");
   });
 
-  test("enables thinking for Anthropic providers", () => {
-    expect(defaultModelOptionsForProvider("anthropic")).toEqual({
+  test("enables Anthropic thinking with a valid explicit budget", () => {
+    const options = defaultModelOptionsForProvider("anthropic");
+
+    expect(options).toEqual({
       max_tokens: 16 * 1024,
       thinking: {
         type: "enabled",
+        budget_tokens: 8 * 1024,
       },
     });
+
+    const thinking = options.thinking as { budget_tokens: number };
+    expect(thinking.budget_tokens).toBeGreaterThanOrEqual(1024);
+    expect(thinking.budget_tokens).toBeLessThan(options.max_tokens as number);
   });
 });
