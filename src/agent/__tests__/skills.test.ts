@@ -40,13 +40,10 @@ Some content here.
     await expect(readSkillFrontMatter(join(tempDir, "nonexistent.md"))).rejects.toThrow("does not exist");
   });
 
-  test("handles SKILL.md with no frontmatter", async () => {
+  test("rejects SKILL.md with no required frontmatter", async () => {
     const skillPath = join(tempDir, "SKILL.md");
     await writeFile(skillPath, "Just plain content, no frontmatter.");
-    const result = await readSkillFrontMatter(skillPath);
-    expect(result.name).toBeUndefined();
-    expect(result.description).toBeUndefined();
-    expect(result.path).toBe(skillPath);
+    await expect(readSkillFrontMatter(skillPath)).rejects.toThrow("non-empty name");
   });
 });
 
@@ -84,7 +81,6 @@ describe("listSkills", () => {
   test("skips directories without SKILL.md", async () => {
     const skillDir = join(tempDir, "skills");
     await mkdir(join(skillDir, "no-skill"), { recursive: true });
-    // No SKILL.md created
 
     const skills = await listSkills([skillDir]);
     expect(skills).toHaveLength(0);
@@ -103,6 +99,4 @@ describe("listSkills", () => {
     const skills = await listSkills([join(tempDir, "does-not-exist")]);
     expect(skills).toHaveLength(0);
   });
-
-
 });
