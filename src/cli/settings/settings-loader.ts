@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 import type { Settings } from "./settings";
 import { settingsSchema } from "./settings";
@@ -36,6 +37,29 @@ async function loadLayer(path: string): Promise<Settings> {
     return {};
   }
   return parsed.data;
+}
+
+function withoutPermissionAllow(settings: Settings): Settings {
+  const permissions = settings.permissions;
+  if (!permissions || typeof permissions !== "object" || Array.isArray(permissions)) {
+    return settings;
+  }
+
+  const permissionRecord = { ...(permissions as Record<string, unknown>) };
+  if (!("allow" in permissionRecord)) {
+    return settings;
+  }
+  delete permissionRecord.allow;
+
+  const out = { ...(settings as Record<string, unknown>) };
+  if (Object.keys(permissionRecord).length > 0) {
+    out.permissions = permissionRecord;
+  } else {
+    delete out.permissions;
+  }
+
+  const parsed = settingsSchema.safeParse(out);
+  return parsed.success ? parsed.data : (out as Settings);
 }
 
 function mergeSettingsLayers(layers: Settings[]): Settings {
@@ -102,18 +126,29 @@ export class SettingsLoader {
     return join(cwd, ".helixent", "settings.json");
   }
 
-  projectLocalSettingsPath(cwd: string): string {
+  legacyProjectLocalSettingsPath(cwd: string): string {
     return join(cwd, ".helixent", "settings.local.json");
   }
 
+  projectLocalSettingsPath(cwd: string): string {
+    const projectId = createHash("sha256").update(resolve(cwd)).digest("hex");
+    return join(this.helixentHome, "projects", projectId, "settings.local.json");
+  }
+
   async load(cwd: string): Promise<Settings> {
-    const paths = [
-      this.userSettingsPath(),
-      this.projectSettingsPath(cwd),
-      this.projectLocalSettingsPath(cwd),
-    ];
-    const layers = await Promise.all(paths.map((p) => loadLayer(p)));
-    return mergeSettingsLayers(layers);
+    const [user, project, legacyProjectLocal, trustedProjectLocal] = await Promise.all([
+      loadLayer(this.userSettingsPath()),
+      loadLayer(this.projectSettingsPath(cwd)),
+      loadLayer(this.legacyProjectLocalSettingsPath(cwd)),
+      loadLayer(this.projectLocalSettingsPath(cwd)),
+    ]);
+
+    return mergeSettingsLayers([
+      user,
+      withoutPermissionAllow(project),
+      withoutPermissionAllow(legacyProjectLocal),
+      trustedProjectLocal,
+    ]);
   }
 
   async loadAllowList(cwd: string): Promise<Set<string>> {
