@@ -27,16 +27,42 @@
   },
   "files": [
     "dist/bin/helixent",
-    "dist/js"
+    "dist/js",
+    "dist/types"
   ],
   "module": "./dist/js/index.js",
+  "types": "./dist/types/index.d.ts",
   "exports": {
-    ".": "./dist/js/index.js",
-    "./foundation": "./dist/js/foundation/index.js",
-    "./agent": "./dist/js/agent/index.js",
-    "./coding": "./dist/js/coding/index.js",
-    "./community/openai": "./dist/js/community/openai/index.js",
-    "./community/anthropic": "./dist/js/community/anthropic/index.js"
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/js/index.js",
+      "default": "./dist/js/index.js"
+    },
+    "./foundation": {
+      "types": "./dist/types/foundation/index.d.ts",
+      "import": "./dist/js/foundation/index.js",
+      "default": "./dist/js/foundation/index.js"
+    },
+    "./agent": {
+      "types": "./dist/types/agent/index.d.ts",
+      "import": "./dist/js/agent/index.js",
+      "default": "./dist/js/agent/index.js"
+    },
+    "./coding": {
+      "types": "./dist/types/coding/index.d.ts",
+      "import": "./dist/js/coding/index.js",
+      "default": "./dist/js/coding/index.js"
+    },
+    "./community/openai": {
+      "types": "./dist/types/community/openai/index.d.ts",
+      "import": "./dist/js/community/openai/index.js",
+      "default": "./dist/js/community/openai/index.js"
+    },
+    "./community/anthropic": {
+      "types": "./dist/types/community/anthropic/index.d.ts",
+      "import": "./dist/js/community/anthropic/index.js",
+      "default": "./dist/js/community/anthropic/index.js"
+    }
   },
   "type": "module",
   "scripts": {
@@ -46,8 +72,9 @@
     "hooks:install": "git config core.hooksPath .githooks",
     "build:bin": "rm -rf dist/bin && bun build index.ts --compile --outfile dist/bin/helixent",
     "build:js": "rm -rf dist/js && bun build ./src/index.ts ./src/foundation/index.ts ./src/agent/index.ts ./src/coding/index.ts ./src/community/openai/index.ts ./src/community/anthropic/index.ts --outdir ./dist/js --root ./src --splitting --target bun --packages external",
+    "build:types": "rm -rf dist/types && tsc -p tsconfig.build.json && bun run scripts/rewrite-dts-aliases.ts",
     "check": "tsc --noEmit && eslint . --ext .ts && bun test && bun run check:package",
-    "check:package": "bun run build:js && bun run build:bin && bun run scripts/check-package.ts",
+    "check:package": "bun run build:js && bun run build:types && bun run build:bin && bun run scripts/check-package.ts",
     "check:types": "tsc --noEmit",
     "dev": "bun run index.ts",
     "lint": "eslint . --ext .ts",
