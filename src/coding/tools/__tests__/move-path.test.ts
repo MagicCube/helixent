@@ -39,7 +39,7 @@ describe("movePathTool", () => {
     await expect(readFile(to, "utf8")).resolves.toBe("payload\n");
   });
 
-  test("refuses to overwrite an existing target file", async () => {
+  test("refuses to overwrite an existing target file observed before the move", async () => {
     const from = join(tempDir, "from.txt");
     const to = join(tempDir, "to.txt");
     await writeFile(from, "source\n");
@@ -57,6 +57,27 @@ describe("movePathTool", () => {
     });
     await expect(readFile(from, "utf8")).resolves.toBe("source\n");
     await expect(readFile(to, "utf8")).resolves.toBe("keep-me\n");
+  });
+
+  test("treats an identical source and target as a successful no-op", async () => {
+    const path = join(tempDir, "same.txt");
+    await writeFile(path, "payload\n");
+
+    const result = await movePathTool.invoke({
+      description: "Keep path in place",
+      from: path,
+      to: path,
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        from: path,
+        to: path,
+        moved: false,
+      },
+    });
+    await expect(readFile(path, "utf8")).resolves.toBe("payload\n");
   });
 
   test("returns structured error for relative source path", async () => {
