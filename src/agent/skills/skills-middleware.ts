@@ -5,13 +5,9 @@ import { join } from "node:path";
 
 import type { AgentMiddleware } from "../agent-middleware";
 
+import { warnInvalidSkill } from "./skill-errors";
 import { readSkillFrontMatter } from "./skill-reader";
 import type { SkillFrontmatter } from "./types";
-
-function warnInvalidSkill(path: string, error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  console.warn(`[helixent] Skipping invalid skill ${path}: ${message}`);
-}
 
 /**
  * Loads skills from one or more `skillsDirs`.
