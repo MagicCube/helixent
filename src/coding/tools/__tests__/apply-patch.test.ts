@@ -148,4 +148,32 @@ describe("applyPatchTool", () => {
     }
     expect(await readFile(filePath, "utf8")).toBe(original);
   });
+
+  test("validates every file before writing any multi-file changes", async () => {
+    const firstPath = join(tempDir, "first.txt");
+    const secondPath = join(tempDir, "second.txt");
+    const firstOriginal = "alpha\n";
+    const secondOriginal = "beta\n";
+    await writeFile(firstPath, firstOriginal);
+    await writeFile(secondPath, secondOriginal);
+
+    const patch = [
+      `--- ${firstPath}`,
+      `+++ ${firstPath}`,
+      "@@ -1,1 +1,1 @@",
+      "-alpha",
+      "+ALPHA",
+      `--- ${secondPath}`,
+      `+++ ${secondPath}`,
+      "@@ -1,1 +1,1 @@",
+      "-not-beta",
+      "+BETA",
+      "",
+    ].join("\n");
+
+    const result = await applyPatchTool.invoke({ description: "Reject invalid multi-file patch", patch });
+    expect(result).toMatchObject({ ok: false, code: "PATCH_APPLY_FAILED" });
+    expect(await readFile(firstPath, "utf8")).toBe(firstOriginal);
+    expect(await readFile(secondPath, "utf8")).toBe(secondOriginal);
+  });
 });
