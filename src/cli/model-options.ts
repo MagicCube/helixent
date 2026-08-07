@@ -1,19 +1,11 @@
-import type { ModelEntry } from "./config";
-
 const DEFAULT_MAX_TOKENS = 16 * 1024;
-const DEFAULT_ANTHROPIC_THINKING_BUDGET_TOKENS = 8 * 1024;
 
-export function defaultModelOptionsForProvider(provider: ModelEntry["provider"]): Record<string, unknown> {
-  if (provider === "anthropic") {
-    return {
-      max_tokens: DEFAULT_MAX_TOKENS,
-      thinking: {
-        type: "enabled",
-        budget_tokens: DEFAULT_ANTHROPIC_THINKING_BUDGET_TOKENS,
-      },
-    };
-  }
-
+/**
+ * Conservative CLI defaults that are valid across configured providers.
+ * Provider/model-specific reasoning modes should be explicitly configured by
+ * callers that know the selected model's capabilities.
+ */
+export function defaultModelOptions(): Record<string, unknown> {
   return {
     max_tokens: DEFAULT_MAX_TOKENS,
   };
