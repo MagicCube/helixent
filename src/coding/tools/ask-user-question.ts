@@ -71,6 +71,38 @@ export const askUserQuestionParametersSchema = z.object({
     .describe("1–4 parallel, independent questions (no dependency between them)."),
 });
 
+function abortError(): DOMException {
+  return new DOMException("Aborted", "AbortError");
+}
+
+async function waitForQuestionResult(
+  callback: (
+    // eslint-disable-next-line no-unused-vars
+    params: AskUserQuestionParameters,
+    // eslint-disable-next-line no-unused-vars
+    signal?: AbortSignal,
+  ) => Promise<AskUserQuestionResult>,
+  params: AskUserQuestionParameters,
+  signal?: AbortSignal,
+): Promise<AskUserQuestionResult> {
+  if (!signal) return callback(params);
+  if (signal.aborted) throw abortError();
+
+  let onAbort: (() => void) | undefined;
+  const aborted = new Promise<never>((_, reject) => {
+    onAbort = () => reject(abortError());
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+
+  try {
+    return await Promise.race([callback(params, signal), aborted]);
+  } finally {
+    if (onAbort) {
+      signal.removeEventListener("abort", onAbort);
+    }
+  }
+}
+
 function validateResultAgainstParams(params: AskUserQuestionParameters, result: AskUserQuestionResult): void {
   if (result.answers.length !== params.questions.length) {
     throw new Error(`ask_user_question: expected ${params.questions.length} answers, got ${result.answers.length}`);
@@ -103,8 +135,12 @@ function validateResultAgainstParams(params: AskUserQuestionParameters, result: 
  * The host must supply `callback` to block until the user submits (e.g. TUI).
  */
 export function createAskUserQuestionTool(
-  // eslint-disable-next-line no-unused-vars
-  callback: (params: AskUserQuestionParameters) => Promise<AskUserQuestionResult>,
+  callback: (
+    // eslint-disable-next-line no-unused-vars
+    params: AskUserQuestionParameters,
+    // eslint-disable-next-line no-unused-vars
+    signal?: AbortSignal,
+  ) => Promise<AskUserQuestionResult>,
 ) {
   return defineTool({
     name: "ask_user_question",
@@ -112,12 +148,9 @@ export function createAskUserQuestionTool(
     parameters: askUserQuestionParametersSchema,
     invoke: async (input, signal) => {
       const params = askUserQuestionParametersSchema.parse(input);
+      const result = await waitForQuestionResult(callback, params, signal);
       if (signal?.aborted) {
-        throw new DOMException("Aborted", "AbortError");
-      }
-      const result = await callback(params);
-      if (signal?.aborted) {
-        throw new DOMException("Aborted", "AbortError");
+        throw abortError();
       }
       validateResultAgainstParams(params, result);
       return JSON.stringify(result);
