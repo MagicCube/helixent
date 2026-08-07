@@ -50,4 +50,19 @@ describe("bashTool", () => {
     },
     10000,
   );
+
+  test.skipIf(!bashOnPath())(
+    "drains large stdout while returning only bounded output",
+    async () => {
+      const command = "head -c 2097152 /dev/zero";
+      const result = await bashTool.invoke({
+        description: "Write more stdout than should enter model context",
+        command,
+      });
+
+      expect(result).toContain("[stdout truncated");
+      expect(result.length).toBeLessThan(20000);
+    },
+    10000,
+  );
 });
