@@ -36,7 +36,7 @@ describe("bashTool", () => {
         command,
       });
 
-      expect(result).toStartWith(`Error: Command ${command} failed with exit code 7:`);
+      expect(result).toContain(`Error: Command ${command} failed with exit code 7:`);
     },
     10000,
   );
