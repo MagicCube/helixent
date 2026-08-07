@@ -60,6 +60,27 @@ describe("applyPatchTool", () => {
     expect(await readFile(filePath, "utf8")).toBe("alpha\ninserted\nbeta\n");
   });
 
+  test("rejects insertion past logical EOF in newline-terminated files", async () => {
+    const filePath = join(tempDir, "demo.txt");
+    const original = "alpha\nbeta\n";
+    await writeFile(filePath, original);
+
+    const patch = [
+      `--- ${filePath}`,
+      `+++ ${filePath}`,
+      "@@ -3,0 +4,1 @@",
+      "+too-late",
+      "",
+    ].join("\n");
+
+    const result = await applyPatchTool.invoke({ description: "Reject insertion past EOF", patch });
+    expect(result).toMatchObject({ ok: false, code: "PATCH_APPLY_FAILED" });
+    if (!result.ok) {
+      expect(result.error).toContain("beyond the end");
+    }
+    expect(await readFile(filePath, "utf8")).toBe(original);
+  });
+
   test("rejects file deletion patches", async () => {
     const filePath = join(tempDir, "demo.txt");
     const patch = [
