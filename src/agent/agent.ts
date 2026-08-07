@@ -143,9 +143,9 @@ export class Agent {
     }
 
     this._streaming = true;
-    this._abortController = new AbortController();
-    this._appendMessage(message);
     try {
+      this._abortController = new AbortController();
+      this._appendMessage(message);
       await this._beforeAgentRun();
       for (let step = 1; step <= this.options.maxSteps; step++) {
         this._abortController.signal.throwIfAborted();
