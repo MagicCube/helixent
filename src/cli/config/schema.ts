@@ -12,6 +12,19 @@ export const helixentConfigSchema = z.object({
   models: z.array(modelEntrySchema).min(1),
   defaultModel: z.string().min(1).optional(),
 }).superRefine((val, ctx) => {
+  const seenNames = new Set<string>();
+  for (const [index, model] of val.models.entries()) {
+    if (seenNames.has(model.name)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate model name "${model.name}". Model names must be unique.`,
+        path: ["models", index, "name"],
+      });
+    } else {
+      seenNames.add(model.name);
+    }
+  }
+
   if (val.defaultModel && !val.models.some((m) => m.name === val.defaultModel)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
