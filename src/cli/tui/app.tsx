@@ -89,6 +89,14 @@ function useFlushToScrollback(
 ) {
   useEffect(() => {
     const targetCount = messages.length > 0 ? messages.length - 1 : 0;
+
+    // `/clear` shrinks the visible history. Reset the cursor so the new
+    // session starts flushing from its own first message instead of inheriting
+    // the previous session's larger message index.
+    if (targetCount < flushedRef.current) {
+      flushedRef.current = 0;
+    }
+
     if (targetCount <= flushedRef.current) return;
 
     const toFlush = messages.slice(flushedRef.current, targetCount);
