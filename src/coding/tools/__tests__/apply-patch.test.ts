@@ -83,4 +83,31 @@ describe("applyPatchTool", () => {
       expect(result.error).toContain("Hunk count mismatch");
     }
   });
+
+  test("rejects out-of-order hunks instead of applying them at the current cursor", async () => {
+    const filePath = join(tempDir, "demo.txt");
+    const original = "alpha\nbeta\ngamma\n";
+    await writeFile(filePath, original);
+
+    const patch = [
+      `--- ${filePath}`,
+      `+++ ${filePath}`,
+      "@@ -2,1 +2,1 @@",
+      "-beta",
+      "+BETA",
+      "@@ -1,0 +1,1 @@",
+      "+inserted-before-alpha",
+      "",
+    ].join("\n");
+
+    const result = await applyPatchTool.invoke({ description: "Reject invalid hunk order", patch });
+    expect(result).toMatchObject({
+      ok: false,
+      code: "PATCH_APPLY_FAILED",
+    });
+    if (!result.ok) {
+      expect(result.error).toContain("out of order");
+    }
+    expect(await readFile(filePath, "utf8")).toBe(original);
+  });
 });
