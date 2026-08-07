@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": false,
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": false,
+    "emitDeclarationOnly": true,
+    "rootDir": "./src",
+    "outDir": "./dist/types"
+  },
+  "include": [
+    "src/index.ts",
+    "src/foundation/**/*.ts",
+    "src/agent/**/*.ts",
+    "src/coding/**/*.ts",
+    "src/community/openai/**/*.ts",
+    "src/community/anthropic/**/*.ts"
+  ],
+  "exclude": ["**/__tests__/**"]
+}
