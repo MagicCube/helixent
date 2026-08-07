@@ -61,4 +61,33 @@ describe("grepSearchTool", () => {
       expect(result.data!.matches.some((line) => line.includes("beta.txt:1:NEEDLE"))).toBe(true);
     }
   });
+
+  test("treats a dash-prefixed pattern as search data instead of an rg option", async () => {
+    await writeFile(join(tempDir, "flags.txt"), "-needle\nother\n");
+
+    const result = await grepSearchTool.invoke({
+      description: "Search for dash-prefixed text",
+      path: tempDir,
+      pattern: "-needle",
+      caseSensitive: true,
+    });
+
+    if (!result.ok && result.code === "RG_NOT_FOUND") {
+      expect(result.error).toContain("ripgrep");
+      return;
+    }
+
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        pattern: "-needle",
+        totalMatches: 1,
+        shownMatches: 1,
+        caseSensitive: true,
+      },
+    });
+    if (result.ok) {
+      expect(result.data!.matches[0]).toContain("flags.txt:1:-needle");
+    }
+  });
 });
