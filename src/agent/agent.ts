@@ -47,6 +47,7 @@ export interface AgentOptions {
  */
 export class Agent {
   private readonly _context: AgentContext;
+  private readonly _initialMessages: NonSystemMessage[];
   private _streaming = false;
   private _abortController: AbortController | null = null;
 
@@ -81,6 +82,7 @@ export class Agent {
   }) {
     this.name = name;
     this.model = model;
+    this._initialMessages = [...messages];
     this._context = {
       prompt,
       tools,
@@ -130,6 +132,25 @@ export class Agent {
    */
   clearMessages() {
     this._context.messages.length = 0;
+  }
+
+  /**
+   * Starts a fresh session by restoring the constructor-provided transcript and
+   * resetting middleware-owned session state. This is distinct from
+   * clearMessages(), which intentionally removes every message.
+   */
+  async reset(): Promise<void> {
+    if (this._streaming) {
+      throw new Error("Cannot reset Agent while it is streaming");
+    }
+
+    this._context.messages.length = 0;
+    this._context.messages.push(...this._initialMessages);
+    this._context.requestedSkillName = null;
+
+    for (const middleware of this.middlewares) {
+      await middleware.onReset?.({ agentContext: this._context });
+    }
   }
 
   /**
@@ -359,4 +380,3 @@ export class Agent {
     }
   }
 }
-
