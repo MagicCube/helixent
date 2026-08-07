@@ -25,6 +25,7 @@ export function convertToOpenAIMessages(messages: Message[]): OpenAIChatCompleti
       };
       for (const content of message.content) {
         if (content.type === "thinking") {
+          if (content.thinking.length === 0) continue;
           assistantMessage.reasoning_content = assistantMessage.reasoning_content
             ? `${assistantMessage.reasoning_content}\n${content.thinking}`
             : content.thinking;
@@ -74,7 +75,7 @@ export function parseAssistantMessage(message: OpenAIChatCompletionMessage, usag
     content: [],
     usage,
   };
-  if (typeof message.reasoning_content === "string") {
+  if (typeof message.reasoning_content === "string" && message.reasoning_content.length > 0) {
     result.content.push({ type: "thinking", thinking: message.reasoning_content });
   }
   if (typeof message.content === "string") {
