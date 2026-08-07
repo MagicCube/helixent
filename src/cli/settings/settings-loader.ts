@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
+import { realpath } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 
 import type { Settings } from "./settings";
 import { settingsSchema } from "./settings";
@@ -115,7 +116,10 @@ export class SettingsLoader {
   private readonly helixentHome: string;
 
   constructor(helixentHome: string = defaultHelixentHome()) {
-    this.helixentHome = helixentHome;
+    if (!isAbsolute(helixentHome)) {
+      throw new Error(`HELIXENT_HOME must be absolute for trusted approval state: ${helixentHome}`);
+    }
+    this.helixentHome = resolve(helixentHome);
   }
 
   userSettingsPath(): string {
@@ -130,17 +134,19 @@ export class SettingsLoader {
     return join(cwd, ".helixent", "settings.local.json");
   }
 
-  projectLocalSettingsPath(cwd: string): string {
-    const projectId = createHash("sha256").update(resolve(cwd)).digest("hex");
+  async projectLocalSettingsPath(cwd: string): Promise<string> {
+    const canonicalCwd = await realpath(cwd);
+    const projectId = createHash("sha256").update(canonicalCwd).digest("hex");
     return join(this.helixentHome, "projects", projectId, "settings.local.json");
   }
 
   async load(cwd: string): Promise<Settings> {
+    const trustedProjectPath = await this.projectLocalSettingsPath(cwd).catch(() => null);
     const [user, project, legacyProjectLocal, trustedProjectLocal] = await Promise.all([
       loadLayer(this.userSettingsPath()),
       loadLayer(this.projectSettingsPath(cwd)),
       loadLayer(this.legacyProjectLocalSettingsPath(cwd)),
-      loadLayer(this.projectLocalSettingsPath(cwd)),
+      trustedProjectPath ? loadLayer(trustedProjectPath) : Promise.resolve({}),
     ]);
 
     return mergeSettingsLayers([
