@@ -1,11 +1,9 @@
-import { existsSync } from "node:fs";
-
 import { describe, expect, test } from "bun:test";
 
 import { bashTool } from "../bash";
 
 function zshOnPath(): boolean {
-  return ["/bin/zsh", "/usr/bin/zsh"].some((p) => existsSync(p));
+  return Bun.which("zsh") !== null;
 }
 
 describe("bashTool", () => {
@@ -28,7 +26,7 @@ describe("bashTool", () => {
   });
 
   test.skipIf(!zshOnPath())(
-    "drains large stderr output without deadlocking",
+    "drains large stderr output without deadlocking or retaining it all",
     async () => {
       const command = "head -c 2097152 /dev/zero >&2; exit 7";
       const result = await bashTool.invoke({
@@ -37,6 +35,8 @@ describe("bashTool", () => {
       });
 
       expect(result).toContain(`Error: Command ${command} failed with exit code 7:`);
+      expect(result).toContain("[stderr truncated");
+      expect(result.length).toBeLessThan(20000);
     },
     10000,
   );
