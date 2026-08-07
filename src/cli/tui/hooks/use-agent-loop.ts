@@ -93,7 +93,12 @@ export function AgentLoopProvider({
       if (streamingRef.current) return;
 
       if (invocation?.name === "clear") {
-        await agent.reset();
+        try {
+          await agent.reset();
+        } catch (error) {
+          console.warn("[helixent] Could not clear the active session:", error);
+          return;
+        }
         flushPendingMessages();
         setMessages([]);
         clearTerminal();
@@ -116,6 +121,9 @@ export function AgentLoopProvider({
         return;
       }
 
+      // Keep the synchronous ref in lockstep with the transition so a second
+      // submit cannot slip in before React commits the state update/effect.
+      streamingRef.current = true;
       setStreaming(true);
 
       try {
@@ -143,6 +151,7 @@ export function AgentLoopProvider({
       } finally {
         agent.setRequestedSkillName(null);
         flushPendingMessages();
+        streamingRef.current = false;
         setStreaming(false);
       }
     },
