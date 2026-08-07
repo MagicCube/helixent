@@ -133,4 +133,19 @@ describe("helixentConfigSchema", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  test("rejects duplicate model names because names are configuration identifiers", () => {
+    const result = helixentConfigSchema.safeParse({
+      models: [
+        { name: "gpt-4", baseURL: "https://api.openai.com/v1", APIKey: "sk-first" },
+        { name: "gpt-4", baseURL: "https://gateway.example.com/v1", APIKey: "sk-second" },
+      ],
+      defaultModel: "gpt-4",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((issue) => issue.message.includes("Duplicate model name"))).toBe(true);
+    }
+  });
 });
