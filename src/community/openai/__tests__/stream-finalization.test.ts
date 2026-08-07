@@ -62,4 +62,26 @@ describe("OpenAI stream finalization", () => {
     expect(snapshots[2]?.usage).toBeUndefined();
     expect(snapshots[2]?.content).toEqual([{ type: "text", text: "hello world" }]);
   });
+
+  test("provider does not synthesize an empty assistant message for an empty iterator", async () => {
+    const provider = new OpenAIModelProvider({ apiKey: "test-key" });
+    const response = (async function* () {
+      // Intentionally empty.
+    })();
+
+    provider._client = {
+      chat: {
+        completions: {
+          create: async () => response,
+        },
+      },
+    } as never;
+
+    const snapshots = [];
+    for await (const snapshot of provider.stream({ model: "compatible-model", messages: [] })) {
+      snapshots.push(snapshot);
+    }
+
+    expect(snapshots).toEqual([]);
+  });
 });
