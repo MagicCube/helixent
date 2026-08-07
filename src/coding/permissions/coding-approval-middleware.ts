@@ -1,5 +1,5 @@
 import { realpath } from "node:fs/promises";
-import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 
 import type { AgentMiddleware } from "@/agent/agent-middleware";
 import type { ToolUseContent } from "@/foundation";
@@ -25,7 +25,7 @@ function extractApplyPatchPaths(patch: string): string[] {
   const paths: string[] = [];
   for (const line of patch.replace(/\r\n/g, "\n").split("\n")) {
     if (!line.startsWith("+++ ")) continue;
-    const rawPath = line.slice(4).trim().replace(/^b\//, "");
+    const rawPath = line.slice(4).trim().replace(/^b\//, "").replace(/^a\//, "");
     if (rawPath !== "/dev/null") {
       paths.push(rawPath);
     }
@@ -53,7 +53,8 @@ function extractToolPaths(toolUse: ToolUseContent): string[] {
 
 function isWithinDirectory(root: string, target: string): boolean {
   const relativePath = relative(root, target);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
+  return relativePath === "" ||
+    (relativePath !== ".." && !relativePath.startsWith(`..${sep}`) && !isAbsolute(relativePath));
 }
 
 function isMissingPathError(error: unknown): boolean {
