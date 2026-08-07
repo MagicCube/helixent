@@ -2,6 +2,13 @@ import type { Command } from "commander";
 
 import { ensureHelixentHomeEnv, isHelixentSetupComplete, loadConfig } from "@/cli/config";
 
+export function maskApiKey(apiKey: string): string {
+  if (apiKey.length <= 4) {
+    return "*".repeat(Math.max(4, apiKey.length));
+  }
+  return `****${apiKey.slice(-4)}`;
+}
+
 export function registerListCommand(parent: Command): void {
   parent
     .command("list")
@@ -27,7 +34,7 @@ export function registerListCommand(parent: Command): void {
         const isDefault = defaultName ? defaultName === m.name : false;
         console.info(`  ${i + 1}. ${m.name}${isDefault ? " (default)" : ""}`);
         console.info(`     baseURL: ${m.baseURL}`);
-        console.info(`     API Key: ****${m.APIKey.slice(-4)}`);
+        console.info(`     API Key: ${maskApiKey(m.APIKey)}`);
         console.info();
       }
       console.info(`\nThe default model is \`${defaultName}\`. To change the default model, run:
