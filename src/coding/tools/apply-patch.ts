@@ -211,6 +211,7 @@ export const applyPatchTool = defineTool({
     try {
       const files = parsePatch(patch);
       const changedFiles: string[] = [];
+      const pendingUpdates = new Map<string, string>();
 
       for (const file of files) {
         if (!file.newPath.startsWith("/")) {
@@ -231,17 +232,23 @@ export const applyPatchTool = defineTool({
           );
         }
 
-        const target = Bun.file(file.newPath);
-        const original = (await target.exists()) ? await target.text() : "";
-        const updated = applyHunks(original, file);
-        const parent = dirname(file.newPath);
+        let original = pendingUpdates.get(file.newPath);
+        if (original === undefined) {
+          const target = Bun.file(file.newPath);
+          original = (await target.exists()) ? await target.text() : "";
+        }
 
+        const updated = applyHunks(original, file);
+        pendingUpdates.set(file.newPath, updated);
+        changedFiles.push(file.newPath);
+      }
+
+      for (const [filePath, updated] of pendingUpdates) {
+        const parent = dirname(filePath);
         if (!(await exists(parent))) {
           await mkdir(parent, { recursive: true });
         }
-
-        await target.write(updated);
-        changedFiles.push(file.newPath);
+        await Bun.file(filePath).write(updated);
       }
 
       return okToolResult(`Applied patch to ${changedFiles.length} file(s).`, {
