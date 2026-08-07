@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { Model, type ModelProvider, type UserMessage } from "@/foundation";
+import { Model, type ModelProvider, type NonSystemMessage, type UserMessage } from "@/foundation";
 
 import { Agent } from "../agent";
 
@@ -55,5 +55,18 @@ test("marks the agent as streaming before beforeAgentRun can await", async () =>
     // Drain the stream so the generator reaches its cleanup path.
   }
 
+  expect(agent.streaming).toBe(false);
+});
+
+test("clears streaming state when transcript setup throws", async () => {
+  const frozenMessages = Object.freeze([]) as unknown as NonSystemMessage[];
+  const agent = new Agent({
+    model: new Model("test-model", provider),
+    prompt: "test",
+    messages: frozenMessages,
+  });
+
+  const stream = agent.stream(userMessage("cannot append"));
+  await expect(stream.next()).rejects.toThrow();
   expect(agent.streaming).toBe(false);
 });
