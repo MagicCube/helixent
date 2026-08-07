@@ -42,7 +42,10 @@ export async function createCodingAgent({
   // eslint-disable-next-line no-unused-vars
   askUser?: (toolUse: ToolUseContent) => Promise<ApprovalDecision>;
   // eslint-disable-next-line no-unused-vars
-  askUserQuestion?: (params: AskUserQuestionParameters) => Promise<AskUserQuestionResult>;
+  askUserQuestion?: (
+    params: AskUserQuestionParameters,
+    signal?: AbortSignal,
+  ) => Promise<AskUserQuestionResult>;
   approvalPersistence?: ApprovalPersistence;
 }) {
   const agentsFile = Bun.file(`${cwd}/AGENTS.md`);
