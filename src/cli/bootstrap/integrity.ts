@@ -13,41 +13,37 @@ import {
 
 import { runFirstRunWizard } from "./first-run-wizard";
 
+function hasExplicitEmptyModelsConfig(): boolean {
+  try {
+    const raw = readFileSync(getConfigFilePath(), "utf8");
+    const parsed: unknown = yamlParse(raw);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return false;
+    }
+    const models = (parsed as { models?: unknown }).models;
+    return Array.isArray(models) && models.length === 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function validateIntegrity(): Promise<void> {
   ensureHelixentHomeEnv();
 
-  // When `config.yaml` exists but has no configured models, we still need bootstrap.
-  // Note: `helixentConfigSchema` requires `models.length >= 1`, so we can't rely on `loadConfig()`
-  // alone to detect the "empty models" case.
+  // `models: []` is an explicit recoverable state: bootstrap can safely replace it.
+  // Any other existing invalid config is preserved and its original validation/parsing
+  // error is surfaced rather than silently overwriting user configuration.
   if (isHelixentSetupComplete()) {
     try {
       const config = loadConfig();
       if (config.models.length > 0) {
         return;
       }
-      // If schema constraints change in the future, keep this as a safety check.
     } catch (err) {
-      // Detect `models: []` even when schema validation fails.
-      let inspectedConfig = false;
-      let modelsLen: number | undefined;
-      try {
-        const raw = readFileSync(getConfigFilePath(), "utf8");
-        const parsed: unknown = yamlParse(raw);
-        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-          throw new Error("Config YAML is not an object.");
-        }
-        const models = (parsed as { models?: unknown }).models;
-        modelsLen = Array.isArray(models) ? models.length : undefined;
-        inspectedConfig = true;
-      } catch {
-        // If we can't inspect the YAML, fall back to bootstrap instead of crashing.
-      }
-
-      if (inspectedConfig && modelsLen !== 0) {
+      if (!hasExplicitEmptyModelsConfig()) {
         throw err;
       }
     }
-    // Fall through to bootstrap.
   }
 
   ensureHelixentHomeDirectory();
