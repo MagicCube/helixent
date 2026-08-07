@@ -1,6 +1,13 @@
 import { expect, test } from "bun:test";
+import { z } from "zod";
 
-import { Model, type ModelProvider, type NonSystemMessage, type UserMessage } from "@/foundation";
+import {
+  defineTool,
+  Model,
+  type ModelProvider,
+  type NonSystemMessage,
+  type UserMessage,
+} from "@/foundation";
 
 import { Agent } from "../agent";
 
@@ -68,5 +75,71 @@ test("clears streaming state when transcript setup throws", async () => {
 
   const stream = agent.stream(userMessage("cannot append"));
   await expect(stream.next()).rejects.toThrow();
+  expect(agent.streaming).toBe(false);
+});
+
+test("does not invoke a tool after abort while beforeToolUse is awaiting", async () => {
+  let approvalStarted!: () => void;
+  let releaseApproval!: () => void;
+  const approvalStartedPromise = new Promise<void>((resolve) => {
+    approvalStarted = resolve;
+  });
+  const approvalGate = new Promise<void>((resolve) => {
+    releaseApproval = resolve;
+  });
+  let invoked = false;
+
+  const tool = defineTool({
+    name: "delayed_tool",
+    description: "test tool",
+    parameters: z.object({}),
+    invoke: async () => {
+      invoked = true;
+      return "ran";
+    },
+  });
+
+  const toolProvider: ModelProvider = {
+    async invoke() {
+      return {
+        role: "assistant",
+        content: [{ type: "tool_use", id: "tc_1", name: "delayed_tool", input: {} }],
+      };
+    },
+    async *stream() {
+      yield {
+        role: "assistant",
+        content: [{ type: "tool_use", id: "tc_1", name: "delayed_tool", input: {} }],
+      };
+    },
+  };
+
+  const agent = new Agent({
+    model: new Model("test-model", toolProvider),
+    prompt: "test",
+    tools: [tool],
+    middlewares: [
+      {
+        beforeToolUse: async () => {
+          approvalStarted();
+          await approvalGate;
+        },
+      },
+    ],
+  });
+
+  const stream = agent.stream(userMessage("run tool"));
+  const assistantEvent = await stream.next();
+  expect(assistantEvent.done).toBe(false);
+
+  const pendingToolEvent = stream.next();
+  await approvalStartedPromise;
+  agent.abort();
+  await expect(pendingToolEvent).rejects.toThrow();
+
+  releaseApproval();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  expect(invoked).toBe(false);
   expect(agent.streaming).toBe(false);
 });
