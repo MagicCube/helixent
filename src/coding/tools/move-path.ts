@@ -1,4 +1,4 @@
-import { rename } from "node:fs/promises";
+import { lstat, rename } from "node:fs/promises";
 
 import z from "zod";
 
@@ -7,9 +7,21 @@ import { defineTool } from "@/foundation";
 import { errorToolResult, okToolResult } from "./tool-result";
 import { ensureAbsolutePath } from "./tool-utils";
 
+async function pathEntryExists(path: string): Promise<boolean> {
+  try {
+    await lstat(path);
+    return true;
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return false;
+    }
+    throw error;
+  }
+}
+
 export const movePathTool = defineTool({
   name: "move_path",
-  description: "Move or rename a file or directory between absolute paths.",
+  description: "Move or rename a file or directory between absolute paths. Refuses to overwrite an existing target.",
   parameters: z.object({
     description: z
       .string()
@@ -29,6 +41,10 @@ export const movePathTool = defineTool({
     }
 
     try {
+      if (await pathEntryExists(to)) {
+        return errorToolResult(`Target path already exists: ${to}`, "TARGET_EXISTS", { from, to });
+      }
+
       await rename(from, to);
       return okToolResult(`Moved path from ${from} to ${to}`, { from, to });
     } catch (error) {
