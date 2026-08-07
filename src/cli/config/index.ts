@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 
@@ -12,6 +12,8 @@ export { helixentConfigSchema, modelEntrySchema } from "./schema";
 
 const DEFAULT_REL = ".helixent";
 const CONFIG_FILENAME = "config.yaml";
+const PRIVATE_DIRECTORY_MODE = 0o700;
+const PRIVATE_FILE_MODE = 0o600;
 
 /** Default `~/.helixent` when `HELIXENT_HOME` is unset. */
 export function getDefaultHelixentHome(): string {
@@ -52,13 +54,17 @@ export function saveConfig(config: HelixentConfig): void {
   const content = stringify(validated, { lineWidth: 0 });
   const target = getConfigFilePath();
   const tmp = `${target}.${process.pid}.${Date.now()}.tmp`;
-  writeFileSync(tmp, content, "utf8");
+  writeFileSync(tmp, content, { encoding: "utf8", mode: PRIVATE_FILE_MODE });
   renameSync(tmp, target);
 }
 
 /** Ensures `HELIXENT_HOME` exists on disk (recursive mkdir). */
 export function ensureHelixentHomeDirectory(): void {
-  mkdirSync(getHelixentHomePath(), { recursive: true });
+  const home = getHelixentHomePath();
+  mkdirSync(home, { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
+  if (process.platform !== "win32") {
+    chmodSync(home, PRIVATE_DIRECTORY_MODE);
+  }
 }
 
 /** Sets `HELIXENT_HOME` to the default path if not already set. */
