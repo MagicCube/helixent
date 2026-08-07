@@ -2,9 +2,10 @@ import z from "zod";
 
 import { defineTool } from "@/foundation";
 
+const MAX_STDOUT_BYTES = 12000;
 const MAX_STDERR_BYTES = 12000;
 
-async function drainLimited(stream: ReadableStream<Uint8Array>, maxBytes: number) {
+async function drainLimited(stream: ReadableStream<Uint8Array>, maxBytes: number, label: string) {
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
   let capturedBytes = 0;
@@ -32,7 +33,7 @@ async function drainLimited(stream: ReadableStream<Uint8Array>, maxBytes: number
   const truncatedBytes = totalBytes - capturedBytes;
   const text = new TextDecoder().decode(captured);
   return {
-    text: truncatedBytes > 0 ? `${text}\n... [stderr truncated ${truncatedBytes} bytes]` : text,
+    text: truncatedBytes > 0 ? `${text}\n... [${label} truncated ${truncatedBytes} bytes]` : text,
     truncated: truncatedBytes > 0,
   };
 }
@@ -47,7 +48,7 @@ export const bashTool = defineTool({
     command: z.string().describe("The bash command to execute."),
   }),
   invoke: async ({ command }, signal) => {
-    // Execute the command and return the standard output or standard error.
+    // Execute the command and return bounded output while fully draining both pipes.
     const proc = Bun.spawn({
       cmd: ["bash", "-c", command],
       stdout: "pipe",
@@ -60,15 +61,15 @@ export const bashTool = defineTool({
       void proc.exited.then(() => signal.removeEventListener("abort", onAbort));
     }
 
-    const [output, stderr, exitCode] = await Promise.all([
-      new Response(proc.stdout).text(),
-      drainLimited(proc.stderr, MAX_STDERR_BYTES),
+    const [stdout, stderr, exitCode] = await Promise.all([
+      drainLimited(proc.stdout, MAX_STDOUT_BYTES, "stdout"),
+      drainLimited(proc.stderr, MAX_STDERR_BYTES, "stderr"),
       proc.exited,
     ]);
 
     if (exitCode !== 0) {
       return `Error: Command ${command} failed with exit code ${exitCode}: ${stderr.text}`;
     }
-    return output;
+    return stdout.text;
   },
 });
