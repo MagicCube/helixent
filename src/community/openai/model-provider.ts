@@ -75,6 +75,13 @@ export class OpenAIModelProvider implements ModelProvider {
       acc.push(chunk);
       yield acc.snapshot();
     }
+
+    // OpenAI emits a final usage chunk when include_usage is honored, but
+    // compatible endpoints may omit it. The iterator ending is still definitive,
+    // so emit one final non-streaming snapshot when usage did not finalize state.
+    if (acc.finish()) {
+      yield acc.snapshot();
+    }
   }
 
   private _baseChatCompletionParams({
