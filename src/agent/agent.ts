@@ -156,6 +156,7 @@ export class Agent {
 
         const toolUses = this._extractToolUses(assistantMessage);
         if (toolUses.length === 0) {
+          await this._afterAgentStep(step);
           await this._afterAgentRun();
           return;
         }
